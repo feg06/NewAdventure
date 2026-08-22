@@ -1,7 +1,8 @@
 class_name Player
 extends CharacterBody2D
 
-@export var move_speed: float = 65.0
+@export var move_speed: float = 70.0
+@export var normalize_diagonal: bool = false # Si es false, mantiene 100% de velocidad en cada eje estilo retro sin frenarse al pulsar diagonales
 @export var sheath_time: float = 4.0
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
@@ -30,6 +31,10 @@ const ROOM_WIDTH: float = 160.0
 const ROOM_HEIGHT: float = 144.0
 
 func _ready() -> void:
+	# Modo flotante top-down sin fricción de suelo/pendientes
+	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
+	wall_min_slide_angle = 0.0
+
 	var peer_id = name.to_int()
 	if peer_id != 0:
 		set_multiplayer_authority(peer_id)
@@ -51,9 +56,9 @@ func _ready() -> void:
 
 	_update_room_coords()
 
-func _physics_process(delta: float) -> void:
+func _physics_process(_delta: float) -> void:
 	if is_multiplayer_authority():
-		_handle_local_input(delta)
+		_handle_local_input()
 		_sync_network_state()
 		_update_carried_item_position()
 		_check_room_transition()
@@ -61,17 +66,20 @@ func _physics_process(delta: float) -> void:
 		_apply_remote_state()
 		_update_carried_item_position()
 
-func _handle_local_input(_delta: float) -> void:
+func _handle_local_input() -> void:
 	if is_attacking:
 		velocity = Vector2.ZERO
 		move_and_slide()
 		return
 
-	var input_vector = Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	# Lectura de ejes independientes
+	var input_x = Input.get_axis("move_left", "move_right")
+	var input_y = Input.get_axis("move_up", "move_down")
+	var raw_input = Vector2(input_x, input_y)
 
-	if input_vector.x > 0.1:
+	if input_x > 0.1:
 		facing_direction = 1
-	elif input_vector.x < -0.1:
+	elif input_x < -0.1:
 		facing_direction = -1
 
 	# Attack action
@@ -83,16 +91,20 @@ func _handle_local_input(_delta: float) -> void:
 	if Input.is_action_just_pressed("interact"):
 		_handle_interaction()
 
-	# Movement
-	if input_vector != Vector2.ZERO:
-		velocity = input_vector.normalized() * move_speed
+	# Movimiento directo y fluido
+	if raw_input != Vector2.ZERO:
+		if normalize_diagonal:
+			velocity = raw_input.normalized() * move_speed
+		else:
+			velocity = Vector2(input_x * move_speed, input_y * move_speed)
+
 		if animated_sprite.animation == "blink":
 			_stop_blink()
 	else:
 		velocity = Vector2.ZERO
 
 	move_and_slide()
-	_update_animation(input_vector != Vector2.ZERO)
+	_update_animation(velocity != Vector2.ZERO)
 
 func _update_animation(is_moving: bool) -> void:
 	if is_attacking:
