@@ -179,6 +179,7 @@ shape = SubResource("CircleShape2D_grab")
 [node name="BlinkTimer" type="Timer" parent="." unique_id=1275280967]
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1025932641]
+process_callback = 0
 top_level = true
 
 [node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="." unique_id=1354531289]
