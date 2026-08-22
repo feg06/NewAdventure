@@ -1,252 +1,35 @@
-[gd_scene load_steps=7 format=3 uid="uid://world_adventure_01"]
+[gd_scene format=4 uid="uid://5lxdbdw74wyq"]
 
-[ext_resource type="Script" path="res://world/scripts/world.gd" id="1_world"]
-[ext_resource type="PackedScene" uid="uid://item_grabbable_01" path="res://items/item.tscn" id="2_item"]
+[ext_resource type="Script" uid="uid://10gssr7kyia7" path="res://world/scripts/world.gd" id="1_32v53"]
+[ext_resource type="TileSet" uid="uid://cerqwoen533na" path="res://world/tilesets/main_tileset.tres" id="2_7j87n"]
+[ext_resource type="PackedScene" path="res://items/item.tscn" id="3_uwmw3"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_h_top"]
-size = Vector2(160, 8)
+[node name="World" type="Node2D" unique_id=1072961651]
+script = ExtResource("1_32v53")
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_h_half"]
-size = Vector2(64, 8)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_v_half"]
-size = Vector2(8, 56)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_v_full"]
-size = Vector2(8, 144)
-
-[node name="World" type="Node2D"]
-script = ExtResource("1_world")
-
-[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
-_spawnable_scenes = PackedStringArray("res://player/player.tscn")
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="." unique_id=1539626465]
+_spawnable_scenes = PackedStringArray("uid://djrk13w54prgp")
 spawn_path = NodePath("../Players")
 
-[node name="Map" type="Node2D" parent="."]
+[node name="GroundLayer" type="TileMapLayer" parent="." unique_id=1096532920]
+z_index = -1
+tile_map_data = PackedByteArray("AAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAUAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAAgAAAAAAAAAAAABAAAAAAABAAAAAAABAAEAAAABAAAAAAABAAIAAAABAAAAAAABAAMAAAABAAAAAAABAAQAAAABAAAAAAABAAUAAAABAAAAAAABAAYAAAABAAAAAAABAAcAAAABAAAAAAABAAgAAAABAAAAAAACAAAAAAAAAAAAAAACAAEAAAAAAAAAAAACAAIAAAAAAAAAAAACAAMAAAAAAAAAAAACAAQAAAAAAAAAAAACAAUAAAAAAAAAAAACAAYAAAAAAAAAAAACAAcAAAAAAAAAAAACAAgAAAAAAAAAAAADAAAAAAABAAAAAAADAAEAAAABAAAAAAADAAIAAAABAAAAAAADAAMAAAABAAAAAAADAAQAAAABAAAAAAADAAUAAAABAAAAAAADAAYAAAABAAAAAAADAAcAAAABAAAAAAADAAgAAAABAAAAAAAEAAAAAAAAAAAAAAAEAAEAAAAAAAAAAAAEAAIAAAAAAAAAAAAEAAMAAAAAAAAAAAAEAAQAAAAAAAAAAAAEAAUAAAAAAAAAAAAEAAYAAAAAAAAAAAAEAAcAAAAAAAAAAAAEAAgAAAAAAAAAAAAFAAAAAAABAAAAAAAFAAEAAAABAAAAAAAFAAIAAAABAAAAAAAFAAMAAAABAAAAAAAFAAQAAAABAAAAAAAFAAUAAAABAAAAAAAFAAYAAAABAAAAAAAFAAcAAAABAAAAAAAFAAgAAAABAAAAAAAGAAAAAAAAAAAAAAAGAAEAAAAAAAAAAAAGAAIAAAAAAAAAAAAGAAMAAAAAAAAAAAAGAAQAAAAAAAAAAAAGAAUAAAAAAAAAAAAGAAYAAAAAAAAAAAAGAAcAAAAAAAAAAAAGAAgAAAAAAAAAAAAHAAAAAAABAAAAAAAHAAEAAAABAAAAAAAHAAIAAAABAAAAAAAHAAMAAAABAAAAAAAHAAQAAAABAAAAAAAHAAUAAAABAAAAAAAHAAYAAAABAAAAAAAHAAcAAAABAAAAAAAHAAgAAAABAAAAAAAIAAAAAAAAAAAAAAAIAAEAAAAAAAAAAAAIAAIAAAAAAAAAAAAIAAMAAAAAAAAAAAAIAAQAAAAAAAAAAAAIAAUAAAAAAAAAAAAIAAYAAAAAAAAAAAAIAAcAAAAAAAAAAAAIAAgAAAAAAAAAAAAJAAAAAAABAAAAAAAJAAEAAAABAAAAAAAJAAIAAAABAAAAAAAJAAMAAAABAAAAAAAJAAQAAAABAAAAAAAJAAUAAAABAAAAAAAJAAYAAAABAAAAAAAJAAcAAAABAAAAAAAJAAgAAAABAAAAAAAKAAAAAAAAAAIAAAAKAAEAAAAAAAIAAAAKAAIAAAAAAAIAAAAKAAMAAAAAAAIAAAAKAAQAAAAAAAIAAAAKAAUAAAAAAAIAAAAKAAYAAAAAAAIAAAAKAAcAAAAAAAIAAAAKAAgAAAAAAAIAAAALAAAAAAAAAAIAAAALAAEAAAAAAAIAAAALAAIAAAAAAAIAAAALAAMAAAAAAAIAAAALAAQAAAAAAAIAAAALAAUAAAAAAAIAAAALAAYAAAAAAAIAAAALAAcAAAAAAAIAAAALAAgAAAAAAAIAAAAMAAAAAAAAAAIAAAAMAAEAAAAAAAIAAAAMAAIAAAAAAAIAAAAMAAMAAAAAAAIAAAAMAAQAAAAAAAIAAAAMAAUAAAAAAAIAAAAMAAYAAAAAAAIAAAAMAAcAAAAAAAIAAAAMAAgAAAAAAAIAAAANAAAAAAAAAAIAAAANAAEAAAAAAAIAAAANAAIAAAAAAAIAAAANAAMAAAAAAAIAAAANAAQAAAAAAAIAAAANAAUAAAAAAAIAAAANAAYAAAAAAAIAAAANAAcAAAAAAAIAAAANAAgAAAAAAAIAAAAOAAAAAAAAAAIAAAAOAAEAAAAAAAIAAAAOAAIAAAAAAAIAAAAOAAMAAAAAAAIAAAAOAAQAAAAAAAIAAAAOAAUAAAAAAAIAAAAOAAYAAAAAAAIAAAAOAAcAAAAAAAIAAAAOAAgAAAAAAAIAAAAPAAAAAAAAAAIAAAAPAAEAAAAAAAIAAAAPAAIAAAAAAAIAAAAPAAMAAAAAAAIAAAAPAAQAAAAAAAIAAAAPAAUAAAAAAAIAAAAPAAYAAAAAAAIAAAAPAAcAAAAAAAIAAAAPAAgAAAAAAAIAAAAQAAAAAAAAAAIAAAAQAAEAAAAAAAIAAAAQAAIAAAAAAAIAAAAQAAMAAAAAAAIAAAAQAAQAAAAAAAIAAAAQAAUAAAAAAAIAAAAQAAYAAAAAAAIAAAAQAAcAAAAAAAIAAAAQAAgAAAAAAAIAAAARAAAAAAAAAAIAAAARAAEAAAAAAAIAAAARAAIAAAAAAAIAAAARAAMAAAAAAAIAAAARAAQAAAAAAAIAAAARAAUAAAAAAAIAAAARAAYAAAAAAAIAAAARAAcAAAAAAAIAAAARAAgAAAAAAAIAAAASAAAAAAAAAAIAAAASAAEAAAAAAAIAAAASAAIAAAAAAAIAAAASAAMAAAAAAAIAAAASAAQAAAAAAAIAAAASAAUAAAAAAAIAAAASAAYAAAAAAAIAAAASAAcAAAAAAAIAAAASAAgAAAAAAAIAAAATAAAAAAAAAAIAAAATAAEAAAAAAAIAAAATAAIAAAAAAAIAAAATAAMAAAAAAAIAAAATAAQAAAAAAAIAAAATAAUAAAAAAAIAAAATAAYAAAAAAAIAAAATAAcAAAAAAAIAAAATAAgAAAAAAAIAAAAAAAkAAAAAAAQAAAAAAAoAAAAAAAQAAAAAAAsAAAAAAAQAAAAAAAwAAAAAAAQAAAAAAA0AAAAAAAQAAAAAAA4AAAAAAAQAAAAAAA8AAAAAAAQAAAAAABAAAAAAAAQAAAAAABEAAAAAAAQAAAABAAkAAAAAAAQAAAABAAoAAAAAAAQAAAABAAsAAAAAAAQAAAABAAwAAAAAAAQAAAABAA0AAAAAAAQAAAABAA4AAAAAAAQAAAABAA8AAAAAAAQAAAABABAAAAAAAAQAAAABABEAAAAAAAQAAAACAAkAAAAAAAQAAAACAAoAAAAAAAQAAAACAAsAAAAAAAQAAAACAAwAAAAAAAQAAAACAA0AAAAAAAQAAAACAA4AAAAAAAQAAAACAA8AAAAAAAQAAAACABAAAAAAAAQAAAACABEAAAAAAAQAAAADAAkAAAAAAAQAAAADAAoAAAAAAAQAAAADAAsAAAAAAAQAAAADAAwAAAAAAAQAAAADAA0AAAAAAAQAAAADAA4AAAAAAAQAAAADAA8AAAAAAAQAAAADABAAAAAAAAQAAAADABEAAAAAAAQAAAAEAAkAAAAAAAQAAAAEAAoAAAAAAAQAAAAEAAsAAAAAAAQAAAAEAAwAAAAAAAQAAAAEAA0AAAAAAAQAAAAEAA4AAAAAAAQAAAAEAA8AAAAAAAQAAAAEABAAAAAAAAQAAAAEABEAAAAAAAQAAAAFAAkAAAAAAAQAAAAFAAoAAAAAAAQAAAAFAAsAAAAAAAQAAAAFAAwAAAAAAAQAAAAFAA0AAAAAAAQAAAAFAA4AAAAAAAQAAAAFAA8AAAAAAAQAAAAFABAAAAAAAAQAAAAFABEAAAAAAAQAAAAGAAkAAAAAAAQAAAAGAAoAAAAAAAQAAAAGAAsAAAAAAAQAAAAGAAwAAAAAAAQAAAAGAA0AAAAAAAQAAAAGAA4AAAAAAAQAAAAGAA8AAAAAAAQAAAAGABAAAAAAAAQAAAAGABEAAAAAAAQAAAAHAAkAAAAAAAQAAAAHAAoAAAAAAAQAAAAHAAsAAAAAAAQAAAAHAAwAAAAAAAQAAAAHAA0AAAAAAAQAAAAHAA4AAAAAAAQAAAAHAA8AAAAAAAQAAAAHABAAAAAAAAQAAAAHABEAAAAAAAQAAAAIAAkAAAAAAAQAAAAIAAoAAAAAAAQAAAAIAAsAAAAAAAQAAAAIAAwAAAAAAAQAAAAIAA0AAAAAAAQAAAAIAA4AAAAAAAQAAAAIAA8AAAAAAAQAAAAIABAAAAAAAAQAAAAIABEAAAAAAAQAAAAJAAkAAAAAAAQAAAAJAAoAAAAAAAQAAAAJAAsAAAAAAAQAAAAJAAwAAAAAAAQAAAAJAA0AAAAAAAQAAAAJAA4AAAAAAAQAAAAJAA8AAAAAAAQAAAAJABAAAAAAAAQAAAAJABEAAAAAAAQAAAA=")
+tile_set = ExtResource("2_7j87n")
+collision_enabled = false
 
-[node name="Room_0_0" type="Node2D" parent="Map"]
+[node name="StructuresLayer" type="TileMapLayer" parent="." unique_id=1495833697]
+tile_map_data = PackedByteArray("AAAAAAAAAQAAAAMAAAABAAAAAQABAAMAAAABAAEAAQABAAQAAAACAAAAAQABAAMAAAACAAEAAQABAAQAAAADAAAAAQABAAMAAAADAAEAAQABAAQAAAAEAAAAAQABAAMAAAAEAAEAAQABAAQAAAAFAAAAAQABAAMAAAAFAAEAAQABAAQAAAAGAAAAAQABAAMAAAAGAAEAAQABAAQAAAAHAAAAAQABAAMAAAAHAAEAAQABAAQAAAAIAAAAAQABAAMAAAAIAAEAAQABAAQAAAAJAAAAAQACAAMAAAAJAAEAAQACAAAAAAAAAAEAAQAAAAQAAAAAAAgAAQAAAAYAAAAAAAcAAQAAAAUAAAAAAAYAAQAAAAQAAAAAAAUAAQAAAAQAAAAAAAQAAQAAAAQAAAAAAAMAAQAAAAQAAAAAAAIAAQAAAAQAAAAJAAgAAQACAAYAAAAJAAcAAQACAAUAAAAJAAYAAQAAAAQAAAAJAAUAAQADAAAAAAAJAAIAAQACAAEAAAABAAcAAQABAAUAAAABAAgAAQABAAYAAAACAAcAAQABAAUAAAACAAgAAQABAAYAAAADAAcAAQABAAUAAAADAAgAAQABAAYAAAAGAAcAAQABAAUAAAAGAAgAAQABAAYAAAAHAAcAAQABAAUAAAAHAAgAAQABAAYAAAAIAAcAAQABAAUAAAAIAAgAAQABAAYAAAA=")
+tile_set = ExtResource("2_7j87n")
 
-[node name="Background" type="ColorRect" parent="Map/Room_0_0"]
-offset_right = 160.0
-offset_bottom = 144.0
-color = Color(0.18, 0.55, 0.34, 1)
+[node name="Items" type="Node2D" parent="." unique_id=1448177382]
 
-[node name="Walls" type="StaticBody2D" parent="Map/Room_0_0"]
-collision_layer = 1
-collision_mask = 0
+[node name="GoldKey" parent="Items" unique_id=636746612 instance=ExtResource("3_uwmw3")]
+position = Vector2(40, 90)
 
-[node name="TopWall" type="CollisionShape2D" parent="Map/Room_0_0/Walls"]
-position = Vector2(80, 4)
-shape = SubResource("RectangleShape2D_wall_h_top")
-
-[node name="TopVisual" type="ColorRect" parent="Map/Room_0_0/Walls/TopWall"]
-offset_left = -80.0
-offset_top = -4.0
-offset_right = 80.0
-offset_bottom = 4.0
-color = Color(0.1, 0.3, 0.15, 1)
-
-[node name="LeftWall" type="CollisionShape2D" parent="Map/Room_0_0/Walls"]
-position = Vector2(4, 72)
-shape = SubResource("RectangleShape2D_wall_v_full")
-
-[node name="LeftVisual" type="ColorRect" parent="Map/Room_0_0/Walls/LeftWall"]
-offset_left = -4.0
-offset_top = -72.0
-offset_right = 4.0
-offset_bottom = 72.0
-color = Color(0.1, 0.3, 0.15, 1)
-
-[node name="RightWallTop" type="CollisionShape2D" parent="Map/Room_0_0/Walls"]
-position = Vector2(156, 28)
-shape = SubResource("RectangleShape2D_wall_v_half")
-
-[node name="RightVisualTop" type="ColorRect" parent="Map/Room_0_0/Walls/RightWallTop"]
-offset_left = -4.0
-offset_top = -28.0
-offset_right = 4.0
-offset_bottom = 28.0
-color = Color(0.1, 0.3, 0.15, 1)
-
-[node name="RightWallBottom" type="CollisionShape2D" parent="Map/Room_0_0/Walls"]
-position = Vector2(156, 116)
-shape = SubResource("RectangleShape2D_wall_v_half")
-
-[node name="RightVisualBottom" type="ColorRect" parent="Map/Room_0_0/Walls/RightWallBottom"]
-offset_left = -4.0
-offset_top = -28.0
-offset_right = 4.0
-offset_bottom = 28.0
-color = Color(0.1, 0.3, 0.15, 1)
-
-[node name="BottomWallLeft" type="CollisionShape2D" parent="Map/Room_0_0/Walls"]
-position = Vector2(32, 140)
-shape = SubResource("RectangleShape2D_wall_h_half")
-
-[node name="BottomVisualLeft" type="ColorRect" parent="Map/Room_0_0/Walls/BottomWallLeft"]
-offset_left = -32.0
-offset_top = -4.0
-offset_right = 32.0
-offset_bottom = 4.0
-color = Color(0.1, 0.3, 0.15, 1)
-
-[node name="BottomWallRight" type="CollisionShape2D" parent="Map/Room_0_0/Walls"]
-position = Vector2(128, 140)
-shape = SubResource("RectangleShape2D_wall_h_half")
-
-[node name="BottomVisualRight" type="ColorRect" parent="Map/Room_0_0/Walls/BottomWallRight"]
-offset_left = -32.0
-offset_top = -4.0
-offset_right = 32.0
-offset_bottom = 4.0
-color = Color(0.1, 0.3, 0.15, 1)
-
-[node name="Room_1_0" type="Node2D" parent="Map"]
-position = Vector2(160, 0)
-
-[node name="Background" type="ColorRect" parent="Map/Room_1_0"]
-offset_right = 160.0
-offset_bottom = 144.0
-color = Color(0.65, 0.5, 0.2, 1)
-
-[node name="Walls" type="StaticBody2D" parent="Map/Room_1_0"]
-collision_layer = 1
-collision_mask = 0
-
-[node name="TopWall" type="CollisionShape2D" parent="Map/Room_1_0/Walls"]
-position = Vector2(80, 4)
-shape = SubResource("RectangleShape2D_wall_h_top")
-
-[node name="TopVisual" type="ColorRect" parent="Map/Room_1_0/Walls/TopWall"]
-offset_left = -80.0
-offset_top = -4.0
-offset_right = 80.0
-offset_bottom = 4.0
-color = Color(0.4, 0.3, 0.1, 1)
-
-[node name="RightWall" type="CollisionShape2D" parent="Map/Room_1_0/Walls"]
-position = Vector2(156, 72)
-shape = SubResource("RectangleShape2D_wall_v_full")
-
-[node name="RightVisual" type="ColorRect" parent="Map/Room_1_0/Walls/RightWall"]
-offset_left = -4.0
-offset_top = -72.0
-offset_right = 4.0
-offset_bottom = 72.0
-color = Color(0.4, 0.3, 0.1, 1)
-
-[node name="BottomWall" type="CollisionShape2D" parent="Map/Room_1_0/Walls"]
-position = Vector2(80, 140)
-shape = SubResource("RectangleShape2D_wall_h_top")
-
-[node name="BottomVisual" type="ColorRect" parent="Map/Room_1_0/Walls/BottomWall"]
-offset_left = -80.0
-offset_top = -4.0
-offset_right = 80.0
-offset_bottom = 4.0
-color = Color(0.4, 0.3, 0.1, 1)
-
-[node name="LeftWallTop" type="CollisionShape2D" parent="Map/Room_1_0/Walls"]
-position = Vector2(4, 28)
-shape = SubResource("RectangleShape2D_wall_v_half")
-
-[node name="LeftVisualTop" type="ColorRect" parent="Map/Room_1_0/Walls/LeftWallTop"]
-offset_left = -4.0
-offset_top = -28.0
-offset_right = 4.0
-offset_bottom = 28.0
-color = Color(0.4, 0.3, 0.1, 1)
-
-[node name="LeftWallBottom" type="CollisionShape2D" parent="Map/Room_1_0/Walls"]
-position = Vector2(4, 116)
-shape = SubResource("RectangleShape2D_wall_v_half")
-
-[node name="LeftVisualBottom" type="ColorRect" parent="Map/Room_1_0/Walls/LeftWallBottom"]
-offset_left = -4.0
-offset_top = -28.0
-offset_right = 4.0
-offset_bottom = 28.0
-color = Color(0.4, 0.3, 0.1, 1)
-
-[node name="Room_0_1" type="Node2D" parent="Map"]
-position = Vector2(0, 144)
-
-[node name="Background" type="ColorRect" parent="Map/Room_0_1"]
-offset_right = 160.0
-offset_bottom = 144.0
-color = Color(0.2, 0.25, 0.55, 1)
-
-[node name="Walls" type="StaticBody2D" parent="Map/Room_0_1"]
-collision_layer = 1
-collision_mask = 0
-
-[node name="BottomWall" type="CollisionShape2D" parent="Map/Room_0_1/Walls"]
-position = Vector2(80, 140)
-shape = SubResource("RectangleShape2D_wall_h_top")
-
-[node name="BottomVisual" type="ColorRect" parent="Map/Room_0_1/Walls/BottomWall"]
-offset_left = -80.0
-offset_top = -4.0
-offset_right = 80.0
-offset_bottom = 4.0
-color = Color(0.1, 0.15, 0.35, 1)
-
-[node name="LeftWall" type="CollisionShape2D" parent="Map/Room_0_1/Walls"]
-position = Vector2(4, 72)
-shape = SubResource("RectangleShape2D_wall_v_full")
-
-[node name="LeftVisual" type="ColorRect" parent="Map/Room_0_1/Walls/LeftWall"]
-offset_left = -4.0
-offset_top = -72.0
-offset_right = 4.0
-offset_bottom = 72.0
-color = Color(0.1, 0.15, 0.35, 1)
-
-[node name="RightWall" type="CollisionShape2D" parent="Map/Room_0_1/Walls"]
-position = Vector2(156, 72)
-shape = SubResource("RectangleShape2D_wall_v_full")
-
-[node name="RightVisual" type="ColorRect" parent="Map/Room_0_1/Walls/RightWall"]
-offset_left = -4.0
-offset_top = -72.0
-offset_right = 4.0
-offset_bottom = 72.0
-color = Color(0.1, 0.15, 0.35, 1)
-
-[node name="TopWallLeft" type="CollisionShape2D" parent="Map/Room_0_1/Walls"]
-position = Vector2(32, 4)
-shape = SubResource("RectangleShape2D_wall_h_half")
-
-[node name="TopVisualLeft" type="ColorRect" parent="Map/Room_0_1/Walls/TopWallLeft"]
-offset_left = -32.0
-offset_top = -4.0
-offset_right = 32.0
-offset_bottom = 4.0
-color = Color(0.1, 0.15, 0.35, 1)
-
-[node name="TopWallRight" type="CollisionShape2D" parent="Map/Room_0_1/Walls"]
-position = Vector2(128, 4)
-shape = SubResource("RectangleShape2D_wall_h_half")
-
-[node name="TopVisualRight" type="ColorRect" parent="Map/Room_0_1/Walls/TopWallRight"]
-offset_left = -32.0
-offset_top = -4.0
-offset_right = 32.0
-offset_bottom = 4.0
-color = Color(0.1, 0.15, 0.35, 1)
-
-[node name="Items" type="Node2D" parent="."]
-
-[node name="GoldKey" parent="Items" instance=ExtResource("2_item")]
-position = Vector2(110, 50)
-item_id = "key_gold"
-item_display_name = "Gold Key"
-item_color = Color(0.95, 0.8, 0.2, 1)
-
-[node name="Chalice" parent="Items" instance=ExtResource("2_item")]
+[node name="Chalice" parent="Items" unique_id=98552931 instance=ExtResource("3_uwmw3")]
 position = Vector2(240, 72)
 item_id = "chalice"
 item_display_name = "Chalice"
 item_color = Color(0.85, 0.45, 0.95, 1)
 
-[node name="Players" type="Node2D" parent="."]
+[node name="Players" type="Node2D" parent="." unique_id=473125918]
