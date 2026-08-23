@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://c4asoteecqsa6" path="res://objects/assets/Button-Sheet.png" id="2_button_sheet"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_hejo5"]
-radius = 3.0
+radius = 4.0
 
 [sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_btn"]
 properties/0/path = NodePath(".:is_pressed")

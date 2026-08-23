@@ -109,10 +109,10 @@ func _handle_local_input() -> void:
 		_start_attack()
 		return
 
-	# Movimiento con velocidad ajustada al jalar
+	# Movimiento con velocidad ajustada al jalar/mover caja
 	var current_speed = move_speed
 	if pulled_box != null:
-		current_speed = move_speed * 0.7
+		current_speed = move_speed * 0.65
 
 	if raw_input != Vector2.ZERO:
 		if normalize_diagonal:
@@ -125,17 +125,23 @@ func _handle_local_input() -> void:
 	else:
 		velocity = Vector2.ZERO
 
-	move_and_slide()
+	# Si estamos agarrando la caja, ambos avanzan juntos con física sólida
+	if pulled_box != null and is_instance_valid(pulled_box):
+		pulled_box.velocity = velocity
+		pulled_box.move_and_slide()
+		move_and_slide()
+	else:
+		move_and_slide()
 
-	# Empuje directo al caminar contra una caja empujable (cuando no la estamos jalando)
-	if pulled_box == null and raw_input != Vector2.ZERO:
-		for i in range(get_slide_collision_count()):
-			var collision = get_slide_collision(i)
-			var collider = collision.get_collider()
-			if collider is PushableBox:
-				var push_dir = -collision.get_normal()
-				if raw_input.dot(push_dir) > 0.3:
-					collider.push(push_dir * move_speed * 0.65)
+		# Empuje directo al caminar contra una caja empujable
+		if raw_input != Vector2.ZERO:
+			for i in range(get_slide_collision_count()):
+				var collision = get_slide_collision(i)
+				var collider = collision.get_collider()
+				if collider is PushableBox:
+					var push_dir = -collision.get_normal()
+					if raw_input.dot(push_dir) > 0.2:
+						collider.push(push_dir * (move_speed * 0.7))
 
 	_update_animation(velocity != Vector2.ZERO)
 
