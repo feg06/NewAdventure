@@ -1,0 +1,41 @@
+[gd_scene load_steps=6 format=3 uid="uid://pushable_box_01"]
+
+[ext_resource type="Script" path="res://objects/pushable_box/pushable_box.gd" id="1_box"]
+[ext_resource type="Texture2D" uid="uid://8qymhorp8est" path="res://objects/assets/PushableBox.png" id="2_box_tex"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_box"]
+size = Vector2(14, 14)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_grab"]
+size = Vector2(20, 20)
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_box"]
+properties/0/path = NodePath(".:sync_pos")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+properties/1/path = NodePath(".:sync_grabber_peer_id")
+properties/1/spawn = true
+properties/1/replication_mode = 1
+
+[node name="PushableBox" type="CharacterBody2D" groups=["boxes", "pushable_boxes"]]
+collision_layer = 32
+collision_mask = 35
+motion_mode = 1
+wall_min_slide_angle = 0.0
+script = ExtResource("1_box")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_box_tex")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_box")
+
+[node name="GrabArea" type="Area2D" parent="."]
+collision_layer = 16
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="GrabArea"]
+shape = SubResource("RectangleShape2D_grab")
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_box")

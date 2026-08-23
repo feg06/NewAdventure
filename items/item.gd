@@ -3,11 +3,12 @@ extends Node2D
 
 @export var item_id: String = "key_gold"
 @export var item_display_name: String = "Gold Key"
-@export var item_color: Color = Color(0.95, 0.8, 0.2)
+@export var item_color: Color = Color(0.95, 0.8, 0.2, 1.0)
+@export var custom_texture: Texture2D = null
 
 @onready var area: Area2D = $Area2D
 @onready var sync: MultiplayerSynchronizer = $MultiplayerSynchronizer
-@onready var visual: Node2D = $Visual
+@onready var sprite: Sprite2D = $Sprite2D
 
 # Network synced
 @export var sync_pos: Vector2 = Vector2.ZERO
@@ -15,12 +16,15 @@ extends Node2D
 
 var carrier: CharacterBody2D = null
 
+const KEY_TEXTURE = preload("res://items/assets/Key.png")
+
 func _ready() -> void:
 	if sync_pos != Vector2.ZERO:
 		global_position = sync_pos
 	else:
 		sync_pos = global_position
-	queue_redraw()
+	
+	_update_visuals()
 
 func _physics_process(_delta: float) -> void:
 	if carrier != null and is_instance_valid(carrier):
@@ -42,15 +46,24 @@ func drop_at(drop_pos: Vector2) -> void:
 	global_position = drop_pos
 	sync_pos = drop_pos
 
+func _update_visuals() -> void:
+	if custom_texture != null:
+		sprite.texture = custom_texture
+		sprite.modulate = item_color
+		sprite.visible = true
+	elif item_id.begins_with("key"):
+		sprite.texture = KEY_TEXTURE
+		sprite.modulate = item_color
+		sprite.visible = true
+	else:
+		sprite.visible = false
+		queue_redraw()
+
 func _draw() -> void:
+	if sprite != null and sprite.visible:
+		return
+
 	match item_id:
-		"key_gold", "key_black", "key_white":
-			var col = item_color
-			draw_rect(Rect2(-4, -2, 8, 4), col)
-			draw_rect(Rect2(0, -6, 4, 4), col)
-			draw_rect(Rect2(2, -6, 2, 2), Color.BLACK)
-			draw_rect(Rect2(-4, 2, 2, 2), col)
-			draw_rect(Rect2(0, 2, 2, 2), col)
 		"chalice":
 			var col = item_color
 			draw_rect(Rect2(-5, -6, 10, 3), col)

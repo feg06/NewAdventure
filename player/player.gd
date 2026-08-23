@@ -25,6 +25,7 @@ var is_attacking: bool = false
 var has_sword_drawn: bool = false
 var facing_direction: int = 1 # 1 = right, -1 = left
 var carried_item: Node2D = null
+var pulled_box: PushableBox = null
 var current_room: Vector2i = Vector2i.ZERO
 
 const ROOM_WIDTH: float = 160.0
@@ -72,6 +73,27 @@ func _handle_local_input() -> void:
 		move_and_slide()
 		return
 
+	var is_holding_action = Input.is_action_pressed("interact")
+	var is_action_just_pressed = Input.is_action_just_pressed("interact")
+	var is_action_just_released = Input.is_action_just_released("interact")
+
+	# 1. Jalar caja manteniendo presionado el botón de acción
+	if is_holding_action and carried_item == null:
+		if pulled_box == null:
+			var candidate_box = _find_adjacent_box()
+			if candidate_box != null:
+				_grab_box(candidate_box)
+		else:
+			# Si la caja se aleja demasiado (por ejemplo por chocar contra un muro), soltar
+			if global_position.distance_to(pulled_box.global_position) > 32.0:
+				_release_box()
+	elif pulled_box != null and (not is_holding_action or is_action_just_released):
+		_release_box()
+
+	# 2. Cargar o soltar items con un toque del botón de acción (solo si no estamos jalando una caja)
+	if is_action_just_pressed and pulled_box == null:
+		_handle_item_interaction()
+
 	# Lectura de ejes independientes
 	var input_x = Input.get_axis("move_left", "move_right")
 	var input_y = Input.get_axis("move_up", "move_down")
@@ -82,21 +104,21 @@ func _handle_local_input() -> void:
 	elif input_x < -0.1:
 		facing_direction = -1
 
-	# Attack action
-	if Input.is_action_just_pressed("attack"):
+	# Attack action (solo si no estamos jalando una caja)
+	if Input.is_action_just_pressed("attack") and pulled_box == null:
 		_start_attack()
 		return
 
-	# Carry / Grab / Drop action
-	if Input.is_action_just_pressed("interact"):
-		_handle_interaction()
+	# Movimiento con velocidad ajustada al jalar
+	var current_speed = move_speed
+	if pulled_box != null:
+		current_speed = move_speed * 0.7
 
-	# Movimiento directo y fluido
 	if raw_input != Vector2.ZERO:
 		if normalize_diagonal:
-			velocity = raw_input.normalized() * move_speed
+			velocity = raw_input.normalized() * current_speed
 		else:
-			velocity = Vector2(input_x * move_speed, input_y * move_speed)
+			velocity = Vector2(input_x * current_speed, input_y * current_speed)
 
 		if animated_sprite.animation == "blink":
 			_stop_blink()
@@ -104,6 +126,17 @@ func _handle_local_input() -> void:
 		velocity = Vector2.ZERO
 
 	move_and_slide()
+
+	# Empuje directo al caminar contra una caja empujable (cuando no la estamos jalando)
+	if pulled_box == null and raw_input != Vector2.ZERO:
+		for i in range(get_slide_collision_count()):
+			var collision = get_slide_collision(i)
+			var collider = collision.get_collider()
+			if collider is PushableBox:
+				var push_dir = -collision.get_normal()
+				if raw_input.dot(push_dir) > 0.3:
+					collider.push(push_dir * move_speed * 0.65)
+
 	_update_animation(velocity != Vector2.ZERO)
 
 func _update_animation(is_moving: bool) -> void:
@@ -175,7 +208,22 @@ func _play_anim(anim_name: String) -> void:
 	if animated_sprite.animation != anim_name or not animated_sprite.is_playing():
 		animated_sprite.play(anim_name)
 
-func _handle_interaction() -> void:
+func _find_adjacent_box() -> PushableBox:
+	var overlapping_areas = grab_area.get_overlapping_areas()
+	var candidate_box: PushableBox = null
+	var min_dist: float = 24.0
+
+	for area in overlapping_areas:
+		var parent = area.get_parent()
+		if parent is PushableBox and parent.grabber == null:
+			var d = global_position.distance_to(parent.global_position)
+			if d < min_dist:
+				min_dist = d
+				candidate_box = parent
+
+	return candidate_box
+
+func _handle_item_interaction() -> void:
 	if carried_item != null:
 		drop_item()
 	else:
@@ -191,8 +239,17 @@ func _handle_interaction() -> void:
 					min_dist = d
 					candidate_item = parent
 
-		if candidate_item:
+		if candidate_item != null:
 			grab_item(candidate_item)
+
+func _grab_box(box: PushableBox) -> void:
+	pulled_box = box
+	box.grab_by(self)
+
+func _release_box() -> void:
+	if pulled_box != null:
+		pulled_box.release()
+		pulled_box = null
 
 func grab_item(item: Node2D) -> void:
 	carried_item = item

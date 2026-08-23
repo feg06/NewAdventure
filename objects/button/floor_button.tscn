@@ -1,0 +1,28 @@
+[gd_scene load_steps=5 format=3 uid="uid://floor_button_01"]
+
+[ext_resource type="Script" path="res://objects/button/floor_button.gd" id="1_button"]
+[ext_resource type="Texture2D" uid="uid://c4asoteecqsa6" path="res://objects/assets/Button-Sheet.png" id="2_button_sheet"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_btn"]
+size = Vector2(12, 12)
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_btn"]
+properties/0/path = NodePath(".:is_pressed")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+
+[node name="FloorButton" type="Area2D" groups=["floor_buttons"]]
+z_index = -1
+collision_layer = 64
+collision_mask = 54
+script = ExtResource("1_button")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_button_sheet")
+hframes = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_btn")
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_btn")

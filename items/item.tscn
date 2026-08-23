@@ -1,6 +1,7 @@
-[gd_scene load_steps=4 format=3 uid="uid://item_grabbable_01"]
+[gd_scene load_steps=5 format=3 uid="uid://item_grabbable_01"]
 
 [ext_resource type="Script" path="res://items/item.gd" id="1_item"]
+[ext_resource type="Texture2D" uid="uid://ci4ay3sijsiya" path="res://items/assets/Key.png" id="2_key_tex"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_item"]
 size = Vector2(16, 16)
@@ -16,14 +17,15 @@ properties/1/replication_mode = 1
 [node name="Item" type="Node2D" groups=["items"]]
 script = ExtResource("1_item")
 
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_key_tex")
+
 [node name="Area2D" type="Area2D" parent="."]
 collision_layer = 16
 collision_mask = 0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
 shape = SubResource("RectangleShape2D_item")
-
-[node name="Visual" type="Node2D" parent="."]
 
 [node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
 replication_config = SubResource("SceneReplicationConfig_item")
