@@ -28,7 +28,21 @@ func _ready() -> void:
 
 func _physics_process(_delta: float) -> void:
 	if carrier != null and is_instance_valid(carrier):
-		global_position = carrier.global_position + Vector2(carrier.facing_direction * 10.0, -2.0)
+		var target_offset = Vector2(carrier.facing_direction * 10.0, -2.0)
+		var from_pos = carrier.global_position
+		var target_pos = from_pos + target_offset
+
+		# Verificar colisión con muros para no traspasarlos
+		var space_state = get_world_2d().direct_space_state
+		var query = PhysicsRayQueryParameters2D.create(from_pos, target_pos, 1)
+		query.collide_with_areas = false
+		query.collide_with_bodies = true
+		var result = space_state.intersect_ray(query)
+		if result:
+			global_position = result.position + result.normal * 2.0
+		else:
+			global_position = target_pos
+
 		sync_pos = global_position
 	elif multiplayer.is_server():
 		sync_pos = global_position

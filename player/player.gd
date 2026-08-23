@@ -259,12 +259,28 @@ func grab_item(item: Node2D) -> void:
 
 func drop_item() -> void:
 	if carried_item != null:
-		var drop_pos = global_position + Vector2(facing_direction * 12.0, 0.0)
+		var target_drop_pos = global_position + Vector2(facing_direction * 12.0, 0.0)
+		var safe_drop_pos = _get_safe_drop_position(global_position, target_drop_pos)
 		var item = carried_item
 		carried_item = null
 		if item is GrabbableItem:
-			item.drop_at(drop_pos)
-		Events.item_dropped.emit(item, drop_pos)
+			item.drop_at(safe_drop_pos)
+		Events.item_dropped.emit(item, safe_drop_pos)
+
+func _get_safe_drop_position(from_pos: Vector2, target_pos: Vector2) -> Vector2:
+	var space_state = get_world_2d().direct_space_state
+	var query = PhysicsRayQueryParameters2D.create(from_pos, target_pos, 1) # Layer 1: Muros
+	query.collide_with_areas = false
+	query.collide_with_bodies = true
+	var result = space_state.intersect_ray(query)
+	if result:
+		var normal = result.normal
+		var safe_pos = result.position + normal * 4.0
+		# Si el punto seguro queda demasiado cerca o detrás del muro, soltar en la posición del jugador
+		if from_pos.distance_to(safe_pos) > from_pos.distance_to(target_pos):
+			return from_pos
+		return safe_pos
+	return target_pos
 
 func _update_carried_item_position() -> void:
 	if carried_item != null and is_instance_valid(carried_item):

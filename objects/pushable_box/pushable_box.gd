@@ -31,13 +31,18 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	if grabber != null and is_instance_valid(grabber):
-		# Being pulled/held by player
+		# Verificar si la caja quedó trabada contra una pared y el jugador se alejó
+		var dist_to_player = global_position.distance_to(grabber.global_position)
+		if dist_to_player > 26.0:
+			release()
+			return
+
+		# Seguir al jugador manteniendo el offset con colisión física de paredes
 		var target_pos = grabber.global_position + grab_offset
 		var to_target = target_pos - global_position
 		velocity = to_target / delta
-		# Limit speed to match player movement
-		if velocity.length() > 120.0:
-			velocity = velocity.normalized() * 120.0
+		if velocity.length() > 90.0:
+			velocity = velocity.normalized() * 90.0
 		move_and_slide()
 		sync_pos = global_position
 	elif is_being_pushed:
