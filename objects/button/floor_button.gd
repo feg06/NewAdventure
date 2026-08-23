@@ -2,7 +2,7 @@ class_name FloorButton
 extends Area2D
 
 ## Action Floor Button / Pressure Plate
-## Activates when a Player or a Pushable Box (or item) steps on it.
+## Activates when a Player, a Pushable Box, or a Grabbable Item is on top of it.
 
 signal pressed(button: FloorButton)
 signal released(button: FloorButton)
@@ -29,7 +29,7 @@ func _ready() -> void:
 	_update_state()
 
 func _on_body_entered(body: Node2D) -> void:
-	if _is_valid_activator(body):
+	if _is_valid_body(body):
 		if not overlapping_objects.has(body):
 			overlapping_objects.append(body)
 		_update_state()
@@ -40,19 +40,19 @@ func _on_body_exited(body: Node2D) -> void:
 
 func _on_area_entered(area: Area2D) -> void:
 	var parent = area.get_parent()
-	if parent and _is_valid_activator(parent):
+	if parent is GrabbableItem:
 		if not overlapping_objects.has(parent):
 			overlapping_objects.append(parent)
 		_update_state()
 
 func _on_area_exited(area: Area2D) -> void:
 	var parent = area.get_parent()
-	if parent:
+	if parent is GrabbableItem:
 		overlapping_objects.erase(parent)
-	_update_state()
+		_update_state()
 
-func _is_valid_activator(node: Node) -> bool:
-	return node.is_in_group("players") or node.is_in_group("boxes") or node.is_in_group("pushable_boxes") or node.is_in_group("items")
+func _is_valid_body(node: Node) -> bool:
+	return node.is_in_group("players") or node.is_in_group("boxes") or node.is_in_group("pushable_boxes")
 
 func _update_state() -> void:
 	# Clean any freed references
