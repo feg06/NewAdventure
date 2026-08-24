@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://8rkkyq11lukb" path="res://objects/pushable_box/pushable_box.tscn" id="5_box"]
 [ext_resource type="PackedScene" uid="uid://bgsdx687cr53e" path="res://objects/button/floor_button.tscn" id="6_button"]
 [ext_resource type="PackedScene" path="res://objects/dispenser/dispenser_01.tscn" id="7_02b8l"]
+[ext_resource type="PackedScene" path="res://objects/dispenser/dispenser_02.tscn" id="8_w4wqy"]
 
 [node name="World" type="Node2D" unique_id=1072961651]
 script = ExtResource("1_32v53")
@@ -52,3 +53,19 @@ position = Vector2(176, 88)
 
 [node name="Dispenser02" parent="." unique_id=69777405 instance=ExtResource("7_02b8l")]
 position = Vector2(240, 128)
+
+[node name="Dispenser03" parent="." unique_id=1528086760 instance=ExtResource("8_w4wqy")]
+position = Vector2(72, 272)
+auto_start_shoot = true
+
+[node name="Dispenser04" parent="." unique_id=205112392 instance=ExtResource("8_w4wqy")]
+position = Vector2(144, 272)
+shoot_direction = 3
+
+[node name="Dispenser05" parent="." unique_id=737727004 instance=ExtResource("8_w4wqy")]
+position = Vector2(144, 208)
+shoot_direction = 2
+
+[node name="Dispenser06" parent="." unique_id=281102093 instance=ExtResource("8_w4wqy")]
+position = Vector2(72, 208)
+shoot_direction = 1
