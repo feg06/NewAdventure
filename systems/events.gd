@@ -20,3 +20,8 @@ signal button_state_changed(button_id: String, is_pressed: bool)
 signal box_grabbed(box: CharacterBody2D, player: CharacterBody2D)
 @warning_ignore("unused_signal")
 signal box_released(box: CharacterBody2D)
+@warning_ignore("unused_signal")
+signal door_opened(door_id: String)
+@warning_ignore("unused_signal")
+signal door_closed(door_id: String)
+

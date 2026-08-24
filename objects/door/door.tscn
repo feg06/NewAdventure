@@ -1,0 +1,96 @@
+[gd_scene format=3 uid="uid://ulbavjgpic1f"]
+
+[ext_resource type="Script" uid="uid://bjhht8s1k61l6" path="res://objects/door/door.gd" id="1_door_script"]
+[ext_resource type="Texture2D" uid="uid://d2ncdbo0gdkdw" path="res://objects/assets/Doors-Sheet.png" id="2_door_tex"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_door_0"]
+atlas = ExtResource("2_door_tex")
+region = Rect2(0, 0, 48, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_door_2"]
+atlas = ExtResource("2_door_tex")
+region = Rect2(96, 0, 48, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_door_1"]
+atlas = ExtResource("2_door_tex")
+region = Rect2(48, 0, 48, 32)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_door"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_door_0")
+}],
+"loop": 0,
+"name": &"closed",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_door_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_door_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_door_0")
+}],
+"loop": 0,
+"name": &"closing",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_door_2")
+}],
+"loop": 0,
+"name": &"open",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_door_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_door_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_door_2")
+}],
+"loop": 0,
+"name": &"opening",
+"speed": 8.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_door_body"]
+size = Vector2(48, 32)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_key_area"]
+size = Vector2(48, 36)
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_door"]
+properties/0/path = NodePath(".:sync_is_open")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+
+[node name="Door" type="StaticBody2D" unique_id=1433989401 groups=["doors"]]
+collision_mask = 0
+script = ExtResource("1_door_script")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1156152080]
+sprite_frames = SubResource("SpriteFrames_door")
+animation = &"closed"
+autoplay = "closed"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1666082060]
+shape = SubResource("RectangleShape2D_door_body")
+
+[node name="KeyReceptorArea" type="Area2D" parent="." unique_id=1916392934]
+collision_layer = 0
+collision_mask = 18
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="KeyReceptorArea" unique_id=699933660]
+shape = SubResource("RectangleShape2D_key_area")
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="." unique_id=1334832076]
+replication_config = SubResource("SceneReplicationConfig_door")
