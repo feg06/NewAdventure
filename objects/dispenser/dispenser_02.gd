@@ -51,21 +51,13 @@ func _update_visual_orientation() -> void:
 	if not is_inside_tree():
 		return
 
-	var angle: float = 0.0
-	match shoot_direction:
-		Direction.DERECHA:
-			angle = 0.0
-		Direction.ABAJO:
-			angle = PI / 2.0
-		Direction.IZQUIERDA:
-			angle = PI
-		Direction.ARRIBA:
-			angle = -PI / 2.0
-
+	# La baliza siempre se mantiene en su orientación vertical normal
 	if sprite:
-		sprite.rotation = angle
+		sprite.rotation = 0.0
+
+	var dir = get_direction_vector()
 	if spawn_marker:
-		spawn_marker.position = Vector2.RIGHT.rotated(angle) * 10.0
+		spawn_marker.position = dir * 10.0
 
 func get_direction_vector() -> Vector2:
 	match shoot_direction:
