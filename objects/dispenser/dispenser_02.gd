@@ -2,9 +2,11 @@
 class_name Dispenser02
 extends StaticBody2D
 
-## Dispenser 02 - Directional Energy Relay Beacon
-## Shoots energy bullets in a configurable direction. If it receives an energy bullet from another beacon,
-## it holds the energy for 1 second and then shoots it forward, creating circuits and ping-pong patterns.
+## Dispenser 02 - Directional Energy Relay Beacon & Synchronized Metronome
+## Shoots energy bullets in a configurable direction.
+## Supports two operation modes:
+## 1. RELE_RECEPTOR: Absorbs incoming energy, waits relay_delay, and shoots forward.
+## 2. METRONOMO_SINCRONIZADO: Fires on a strict rhythmic global beat (sync_interval + sync_offset) that never desyncs.
 
 enum Direction {
 	DERECHA,
@@ -13,16 +15,33 @@ enum Direction {
 	ARRIBA
 }
 
+enum Mode {
+	RELE_RECEPTOR,          ## Dispara al recibir una bala de otra baliza (o al inicio si auto_start_shoot es true)
+	METRONOMO_SINCRONIZADO  ## Dispara a un compás rítmico fijo y continuo que nunca se desincroniza
+}
+
 const ENERGY_BULLET_SCENE = preload("res://objects/bullet/energy_bullet.tscn")
+
+@export var mode: Mode = Mode.RELE_RECEPTOR:
+	set(val):
+		mode = val
+		notify_property_list_changed()
 
 @export var shoot_direction: Direction = Direction.DERECHA:
 	set(val):
 		shoot_direction = val
 		_update_visual_orientation()
 
+@export_group("Modo Metrónomo Sincronizado")
+@export var sync_interval: float = 3.0 ## Duración del ciclo completo entre disparos (ej: 3.0 segundos)
+@export var sync_offset: float = 0.0   ## Desfase de disparo dentro del ciclo (ej: 0.0s, 1.5s para disparos alternados)
+
+@export_group("Modo Relé Receptor")
 @export var auto_start_shoot: bool = false
 @export var initial_delay: float = 0.5
-@export var relay_delay: float = 1.0 ## Tiempo de espera (en segundos) al recibir una bala antes de reenviarla
+@export var relay_delay: float = 1.0   ## Tiempo de espera (en segundos) al recibir una bala antes de reenviarla
+
+@export_group("Parámetros Generales")
 @export var bullet_speed: float = 70.0
 @export var active: bool = true
 
@@ -31,6 +50,7 @@ const ENERGY_BULLET_SCENE = preload("res://objects/bullet/energy_bullet.tscn")
 @onready var receptor_area: Area2D = $ReceptorArea
 
 var is_holding_energy: bool = false
+var _metronome_timer: Timer = null
 
 func _ready() -> void:
 	_update_visual_orientation()
@@ -41,11 +61,36 @@ func _ready() -> void:
 	if receptor_area:
 		receptor_area.area_entered.connect(_on_receptor_area_entered)
 
-	if auto_start_shoot and active:
+	if not active:
+		return
+
+	if mode == Mode.METRONOMO_SINCRONIZADO:
+		_setup_metronome()
+	elif mode == Mode.RELE_RECEPTOR and auto_start_shoot:
 		get_tree().create_timer(max(0.1, initial_delay)).timeout.connect(func():
 			if active and is_inside_tree():
 				shoot_energy()
 		)
+
+func _setup_metronome() -> void:
+	_metronome_timer = Timer.new()
+	_metronome_timer.one_shot = false
+	_metronome_timer.wait_time = max(0.3, sync_interval)
+	_metronome_timer.timeout.connect(func():
+		if active and is_inside_tree():
+			shoot_energy()
+	)
+	add_child(_metronome_timer)
+
+	if sync_offset > 0.0:
+		get_tree().create_timer(sync_offset).timeout.connect(func():
+			if active and is_inside_tree():
+				shoot_energy()
+				_metronome_timer.start()
+		)
+	else:
+		shoot_energy()
+		_metronome_timer.start()
 
 func _update_visual_orientation() -> void:
 	if not is_inside_tree():
@@ -75,17 +120,19 @@ func receive_energy_bullet(_bullet: EnergyBullet) -> void:
 	if not active or is_holding_energy:
 		return
 
-	is_holding_energy = true
+	# En modo metrónomo, el compás es autónomo; en modo relé, absorbe y reenvía
+	if mode == Mode.RELE_RECEPTOR:
+		is_holding_energy = true
+		_play_charge_effect()
 
-	# Efecto visual de carga/retención de energía
-	_play_charge_effect()
-
-	# Esperar el tiempo de retención (1 segundo) y continuar el recorrido
-	get_tree().create_timer(relay_delay).timeout.connect(func():
-		is_holding_energy = false
-		if active and is_inside_tree():
-			shoot_energy()
-	)
+		get_tree().create_timer(relay_delay).timeout.connect(func():
+			is_holding_energy = false
+			if active and is_inside_tree():
+				shoot_energy()
+		)
+	else:
+		# En modo metrónomo, simplemente muestra el efecto visual de impacto/absorción
+		_play_charge_effect()
 
 func _on_receptor_area_entered(area: Area2D) -> void:
 	if area is EnergyBullet and area.launcher_node != self:
@@ -107,7 +154,7 @@ func shoot_energy() -> void:
 
 	var world_map = get_tree().current_scene
 	if world_map:
-		world_map.add_child(bullet)
+		world_map.add_child.call_deferred(bullet)
 
 func _is_blocked() -> bool:
 	var space = get_world_2d().direct_space_state

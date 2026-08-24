@@ -46,5 +46,5 @@ func _on_area_entered(area: Area2D) -> void:
 func _destroy() -> void:
 	var effect = DESTRUCTION_EFFECT.instantiate()
 	effect.global_position = global_position
-	get_tree().current_scene.add_child(effect)
+	get_tree().current_scene.add_child.call_deferred(effect)
 	queue_free()

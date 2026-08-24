@@ -78,4 +78,4 @@ func _spawn_bullet(dir: Vector2, spawn_pos: Vector2) -> void:
 
 	var world_map = get_tree().current_scene
 	if world_map:
-		world_map.add_child(bullet)
+		world_map.add_child.call_deferred(bullet)

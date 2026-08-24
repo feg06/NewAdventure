@@ -56,16 +56,29 @@ position = Vector2(240, 128)
 
 [node name="Dispenser03" parent="." unique_id=1528086760 instance=ExtResource("8_w4wqy")]
 position = Vector2(72, 272)
+mode = 1
+sync_interval = null
+sync_offset = null
 auto_start_shoot = true
 
 [node name="Dispenser04" parent="." unique_id=205112392 instance=ExtResource("8_w4wqy")]
 position = Vector2(144, 272)
+mode = null
 shoot_direction = 3
+sync_interval = null
+sync_offset = null
 
 [node name="Dispenser05" parent="." unique_id=737727004 instance=ExtResource("8_w4wqy")]
 position = Vector2(144, 208)
+mode = 1
 shoot_direction = 2
+sync_interval = null
+sync_offset = null
+auto_start_shoot = true
 
 [node name="Dispenser06" parent="." unique_id=281102093 instance=ExtResource("8_w4wqy")]
 position = Vector2(72, 208)
+mode = null
 shoot_direction = 1
+sync_interval = null
+sync_offset = null
