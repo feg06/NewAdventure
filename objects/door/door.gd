@@ -17,7 +17,8 @@ signal closed()
 @export var keep_open_once_unlocked: bool = true ## Si es true, una vez abierta permanece abierta para siempre
 @export var open_on_button_id: String = ""       ## ID del botón de suelo que abre esta puerta (ej: "btn_1")
 @export var requires_key: bool = false           ## Si requiere una llave para abrirse
-@export var required_key_id: String = "key_gold" ## ID de la llave requerida (ej: "key_gold", "key_white", etc.)
+@export var required_key_id: String = "key_01"   ## ID de la llave requerida (ej: "key_01", "key_02", etc.)
+@export var consume_key_on_use: bool = true     ## Si la llave se consume/desaparece al abrir la puerta
 
 # Network Synced
 @export var sync_is_open: bool = false
@@ -97,7 +98,7 @@ func _on_key_receptor_body_entered(body: Node2D) -> void:
 	if body is CharacterBody2D and "carried_item" in body:
 		var item = body.carried_item
 		if _is_matching_key(item):
-			open()
+			_unlock_with_key(item)
 
 func _on_key_receptor_area_entered(area: Area2D) -> void:
 	if not requires_key or is_open:
@@ -105,7 +106,15 @@ func _on_key_receptor_area_entered(area: Area2D) -> void:
 
 	var parent = area.get_parent()
 	if _is_matching_key(parent):
-		open()
+		_unlock_with_key(parent)
+
+func _unlock_with_key(item: Node) -> void:
+	open()
+	if consume_key_on_use and item != null and is_instance_valid(item):
+		if item.has_method("consume"):
+			item.consume()
+		else:
+			item.queue_free()
 
 func _is_matching_key(item: Node) -> bool:
 	if item is GrabbableItem:

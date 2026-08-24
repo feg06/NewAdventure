@@ -1,8 +1,8 @@
 class_name GrabbableItem
 extends Node2D
 
-@export var item_id: String = "key_gold"
-@export var item_display_name: String = "Gold Key"
+@export var item_id: String = "key_01"
+@export var item_display_name: String = "Key 01"
 @export var item_color: Color = Color(0.95, 0.8, 0.2, 1.0)
 @export var custom_texture: Texture2D = null
 
@@ -59,6 +59,13 @@ func drop_at(drop_pos: Vector2) -> void:
 	sync_carrier_peer_id = 0
 	global_position = drop_pos
 	sync_pos = drop_pos
+
+func consume() -> void:
+	if carrier != null and is_instance_valid(carrier):
+		if "carried_item" in carrier and carrier.carried_item == self:
+			carrier.carried_item = null
+	carrier = null
+	queue_free()
 
 func _update_visuals() -> void:
 	if custom_texture != null:
