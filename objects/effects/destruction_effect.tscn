@@ -1,0 +1,38 @@
+[gd_scene format=3 uid="uid://destruction_fx_01"]
+
+[ext_resource type="Script" path="res://objects/effects/destruction_effect.gd" id="1_fx_script"]
+[ext_resource type="Texture2D" uid="uid://csmw4lh01bvxf" path="res://objects/assets/Generic_Effect_Destruction-Sheet.png" id="2_fx_tex"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fx0"]
+atlas = ExtResource("2_fx_tex")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fx1"]
+atlas = ExtResource("2_fx_tex")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fx2"]
+atlas = ExtResource("2_fx_tex")
+region = Rect2(32, 0, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_fx"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_fx0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_fx1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_fx2")
+}],
+"loop": false,
+"name": &"default",
+"speed": 12.0
+}]
+
+[node name="DestructionEffect" type="AnimatedSprite2D"]
+sprite_frames = SubResource("SpriteFrames_fx")
+autoplay = "default"
+script = ExtResource("1_fx_script")

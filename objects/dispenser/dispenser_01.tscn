@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://dispenser_01_scene"]
+
+[ext_resource type="Script" path="res://objects/dispenser/dispenser_01.gd" id="1_dispenser_script"]
+[ext_resource type="Texture2D" uid="uid://xwrv7f58r81d" path="res://objects/assets/Dispenser_01.png" id="2_dispenser_tex"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_cannon"]
+size = Vector2(16, 16)
+
+[node name="Dispenser01" type="StaticBody2D" groups=["dispensers", "traps"]]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_dispenser_script")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_dispenser_tex")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_cannon")
+
+[node name="SpawnLeft" type="Marker2D" parent="."]
+position = Vector2(-10, 0)
+
+[node name="SpawnRight" type="Marker2D" parent="."]
+position = Vector2(10, 0)
+
+[node name="Timer" type="Timer" parent="."]
+one_shot = false
