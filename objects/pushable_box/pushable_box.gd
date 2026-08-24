@@ -4,8 +4,8 @@ extends CharacterBody2D
 ## Pushable & Pullable Box
 ## Solid object with realistic physics collision. Can be pushed by walking or pulled holding Action.
 
-@export var push_speed: float = 45.0
-@export var friction: float = 12.0
+@export var push_speed: float = 40.0
+@export var friction: float = 26.0
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var grab_area: Area2D = $GrabArea

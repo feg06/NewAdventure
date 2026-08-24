@@ -119,9 +119,6 @@ func _handle_local_input() -> void:
 			velocity = raw_input.normalized() * current_speed
 		else:
 			velocity = Vector2(input_x * current_speed, input_y * current_speed)
-
-		if animated_sprite.animation == "blink":
-			_stop_blink()
 	else:
 		velocity = Vector2.ZERO
 
@@ -141,7 +138,7 @@ func _handle_local_input() -> void:
 				if collider is PushableBox:
 					var push_dir = -collision.get_normal()
 					if raw_input.dot(push_dir) > 0.2:
-						collider.push(push_dir * (move_speed * 0.7))
+						collider.push(push_dir * (move_speed * 0.55))
 
 	_update_animation(velocity != Vector2.ZERO)
 
@@ -149,17 +146,17 @@ func _update_animation(is_moving: bool) -> void:
 	if is_attacking:
 		return
 
-	if animated_sprite.animation == "blink" and animated_sprite.is_playing():
-		if not is_moving:
-			return
-
 	if has_sword_drawn:
 		if is_moving:
 			_play_anim("walk_sword")
 		else:
 			_play_anim("idle_sword")
 	else:
-		_play_anim("idle")
+		if animated_sprite.animation == "blink" and animated_sprite.is_playing():
+			# Mantener pestañeo activo mientras camina o está detenido
+			pass
+		else:
+			_play_anim("idle")
 
 	animated_sprite.flip_h = (facing_direction < 0)
 	animated_sprite.offset = Vector2.ZERO
@@ -168,8 +165,6 @@ func _start_attack() -> void:
 	is_attacking = true
 	has_sword_drawn = true
 	sheath_timer.stop()
-	if animated_sprite.animation == "blink":
-		_stop_blink()
 
 	_play_anim("attack")
 	animated_sprite.flip_h = (facing_direction < 0)
@@ -202,7 +197,7 @@ func _start_random_blink_timer() -> void:
 		blink_timer.start(randf_range(2.5, 5.5))
 
 func _on_blink_timeout() -> void:
-	if not has_sword_drawn and not is_attacking and velocity == Vector2.ZERO:
+	if not has_sword_drawn and not is_attacking:
 		_play_anim("blink")
 	else:
 		_start_random_blink_timer()
