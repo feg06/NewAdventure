@@ -16,10 +16,6 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	area_entered.connect(_on_area_entered)
 
-	# Orientar rotación según la dirección
-	if direction != Vector2.ZERO:
-		rotation = direction.angle()
-
 	get_tree().create_timer(lifetime).timeout.connect(func():
 		if is_inside_tree():
 			_destroy()

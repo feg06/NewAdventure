@@ -16,12 +16,6 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	area_entered.connect(_on_area_entered)
 
-	# Rotar o voltear el sprite según la dirección
-	if direction.x != 0:
-		sprite.flip_h = (direction.x > 0)
-	elif direction.y != 0:
-		sprite.rotation = PI / 2.0 if direction.y > 0 else -PI / 2.0
-
 	get_tree().create_timer(lifetime).timeout.connect(func():
 		if is_inside_tree():
 			_destroy()
