@@ -8,19 +8,19 @@ extends StaticBody2D
 signal opened()
 signal closed()
 
-@export var door_id: String = "door_1"
+@export var door_id: String = "door_01"
 @export var is_open: bool = false:
 	set(val):
 		is_open = val
 		_update_state_visuals()
 
 @export var keep_open_once_unlocked: bool = true ## Si es true, una vez abierta permanece abierta para siempre
-@export var open_on_button_id: String = ""       ## ID del botón de suelo que abre esta puerta (ej: "btn_1")
-@export var requires_key: bool = false           ## Si requiere una llave para abrirse
+@export var open_on_button_id: String = ""       ## ID del botón de suelo que abre esta puerta (ej: "button_01")
+@export var requires_key: bool = true            ## Si requiere una llave para abrirse (por defecto sí)
 @export var required_key_id: String = "key_01"   ## ID de la llave requerida (ej: "key_01", "key_02", etc.)
 @export var consume_key_on_use: bool = true     ## Si la llave se consume/desaparece al abrir la puerta
 
-# Network Synced
+@export_group("Network Internals")
 @export var sync_is_open: bool = false
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D

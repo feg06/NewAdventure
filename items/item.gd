@@ -2,7 +2,7 @@ class_name GrabbableItem
 extends Node2D
 
 @export var item_id: String = "key_01"
-@export var item_display_name: String = "Key 01"
+@export var item_display_name: String = "Key"
 @export var item_color: Color = Color(0.95, 0.8, 0.2, 1.0)
 @export var custom_texture: Texture2D = null
 
@@ -10,7 +10,7 @@ extends Node2D
 @onready var sync: MultiplayerSynchronizer = $MultiplayerSynchronizer
 @onready var sprite: Sprite2D = $Sprite2D
 
-# Network synced
+@export_group("Network Internals")
 @export var sync_pos: Vector2 = Vector2.ZERO
 @export var sync_carrier_peer_id: int = 0
 

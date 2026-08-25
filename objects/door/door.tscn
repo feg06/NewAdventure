@@ -7,24 +7,32 @@
 atlas = ExtResource("2_door_tex")
 region = Rect2(0, 0, 48, 32)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_door_1"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_door_4"]
 atlas = ExtResource("2_door_tex")
-region = Rect2(48, 0, 48, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_door_2"]
-atlas = ExtResource("2_door_tex")
-region = Rect2(96, 0, 48, 32)
+region = Rect2(192, 0, 48, 32)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_door_3"]
 atlas = ExtResource("2_door_tex")
 region = Rect2(144, 0, 48, 32)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_door_4"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_door_2"]
 atlas = ExtResource("2_door_tex")
-region = Rect2(192, 0, 48, 32)
+region = Rect2(96, 0, 48, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_door_1"]
+atlas = ExtResource("2_door_tex")
+region = Rect2(48, 0, 48, 32)
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_door"]
 animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_door_0")
+}],
+"loop": 0,
+"name": &"closed",
+"speed": 5.0
+}, {
 "frames": [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_door_4")
@@ -44,14 +52,6 @@ animations = [{
 "loop": 0,
 "name": &"closing",
 "speed": 10.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_door_0")
-}],
-"loop": 0,
-"name": &"closed",
-"speed": 5.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -83,7 +83,7 @@ animations = [{
 }]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_door_body"]
-size = Vector2(48, 32)
+size = Vector2(48, 16)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_key_area"]
 size = Vector2(48, 36)
@@ -103,6 +103,7 @@ animation = &"closed"
 autoplay = "closed"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1666082060]
+position = Vector2(0, 8)
 shape = SubResource("RectangleShape2D_door_body")
 
 [node name="KeyReceptorArea" type="Area2D" parent="." unique_id=1916392934]

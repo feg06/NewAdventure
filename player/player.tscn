@@ -118,8 +118,8 @@ animations = [{
 "speed": 8.0
 }]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
-size = Vector2(8, 8)
+[sub_resource type="CircleShape2D" id="CircleShape2D_x4cml"]
+radius = 5.0
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
 size = Vector2(16, 16)
@@ -157,7 +157,7 @@ sprite_frames = SubResource("SpriteFrames_player")
 animation = &"idle"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1955485783]
-shape = SubResource("RectangleShape2D_body")
+shape = SubResource("CircleShape2D_x4cml")
 
 [node name="HitboxArea" type="Area2D" parent="." unique_id=1019336734]
 collision_layer = 8
@@ -179,8 +179,8 @@ shape = SubResource("CircleShape2D_grab")
 [node name="BlinkTimer" type="Timer" parent="." unique_id=1275280967]
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1025932641]
-process_callback = 0
 top_level = true
+process_callback = 0
 
 [node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="." unique_id=1354531289]
 replication_config = SubResource("SceneReplicationConfig_player")

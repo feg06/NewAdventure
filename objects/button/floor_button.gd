@@ -7,12 +7,13 @@ extends Area2D
 signal pressed(button: FloorButton)
 signal released(button: FloorButton)
 
-@export var button_id: String = "btn_1"
+@export var button_id: String = "button_01"
 @export var is_permanent: bool = false # If true, stays pressed forever once activated
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var sync: MultiplayerSynchronizer = $MultiplayerSynchronizer
 
+@export_group("State & Network")
 @export var is_pressed: bool = false:
 	set(val):
 		is_pressed = val
