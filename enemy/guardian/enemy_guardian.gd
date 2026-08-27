@@ -71,8 +71,9 @@ var dodge_timer: float = 0.0
 const ROOM_WIDTH: float = 160.0
 const ROOM_HEIGHT: float = 144.0
 
-# Bitmask layer 1 (muros) para raycasts
-const WALL_LAYER_MASK: int = 1
+# Bitmask layer 1 (muros) + layer 6 (cajas) para raycasts: 1+32=33
+# La caja bloquea la línea de visión igual que un muro.
+const WALL_LAYER_MASK: int = 33
 
 func _ready() -> void:
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
@@ -165,6 +166,11 @@ func _physics_process(delta: float) -> void:
 			velocity = Vector2.ZERO
 
 	move_and_slide()
+
+	# En modo persecución, empujar cajas al chocar físicamente con ellas
+	if current_state == State.CHASE:
+		_push_boxes_on_collision()
+
 	_update_animation(velocity.length() > 1.0)
 
 # ---------------------------------------------------------------------------
@@ -400,6 +406,19 @@ func _update_room_coords() -> void:
 # ---------------------------------------------------------------------------
 # DAÑO Y MUERTE
 # ---------------------------------------------------------------------------
+
+## Empuja las cajas con las que choca el guardián al perseguir al jugador.
+## Usa los resultados de move_and_slide() para detectar la colisión real.
+func _push_boxes_on_collision() -> void:
+	for i in get_slide_collision_count():
+		var col = get_slide_collision(i)
+		var collider = col.get_collider()
+		if collider is PushableBox and is_instance_valid(collider):
+			# Empujar la caja en la dirección del movimiento del guardián
+			var push_dir = velocity.normalized()
+			if push_dir != Vector2.ZERO:
+				collider.push(push_dir * move_speed * 0.65)
+
 func take_damage(amount: int = 1) -> void:
 	if is_invulnerable or current_health <= 0:
 		return

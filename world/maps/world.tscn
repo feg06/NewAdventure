@@ -80,3 +80,9 @@ position = Vector2(240, 16)
 
 [node name="EnemyGuardian" parent="." unique_id=987277385 instance=ExtResource("10_dmdjm")]
 position = Vector2(123, 252)
+
+[node name="PushableBox" parent="." unique_id=1308728986 instance=ExtResource("5_box")]
+position = Vector2(118, 103)
+
+[node name="PushableBox2" parent="." unique_id=908417413 instance=ExtResource("5_box")]
+position = Vector2(43, 41)
