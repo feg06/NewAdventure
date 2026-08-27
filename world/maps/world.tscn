@@ -7,8 +7,9 @@
 [ext_resource type="PackedScene" uid="uid://8rkkyq11lukb" path="res://objects/pushable_box/pushable_box.tscn" id="5_box"]
 [ext_resource type="PackedScene" uid="uid://bgsdx687cr53e" path="res://objects/button/floor_button.tscn" id="6_button"]
 [ext_resource type="PackedScene" path="res://objects/dispenser/dispenser_01.tscn" id="7_02b8l"]
-[ext_resource type="PackedScene" path="res://objects/dispenser/dispenser_02.tscn" id="8_w4wqy"]
+[ext_resource type="PackedScene" uid="uid://bgpj0ik0pilti" path="res://objects/dispenser/dispenser_02.tscn" id="8_w4wqy"]
 [ext_resource type="PackedScene" uid="uid://ulbavjgpic1f" path="res://objects/door/door.tscn" id="9_ltvwc"]
+[ext_resource type="PackedScene" path="res://enemy/guardian/enemy_guardian.tscn" id="10_dmdjm"]
 
 [node name="World" type="Node2D" unique_id=1072961651]
 script = ExtResource("1_32v53")
@@ -76,3 +77,6 @@ shoot_direction = 1
 
 [node name="Door" parent="." unique_id=1168843437 instance=ExtResource("9_ltvwc")]
 position = Vector2(240, 16)
+
+[node name="EnemyGuardian" parent="." unique_id=987277385 instance=ExtResource("10_dmdjm")]
+position = Vector2(123, 252)

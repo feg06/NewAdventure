@@ -1,9 +1,14 @@
 class_name Player
 extends CharacterBody2D
 
+const DEAD_EFFECT = preload("res://objects/effects/dead_effect.tscn")
+const HUD_SCENE = preload("res://ui/hud/hud.tscn")
+
 @export var move_speed: float = 70.0
 @export var normalize_diagonal: bool = false # Si es false, mantiene 100% de velocidad en cada eje estilo retro sin frenarse al pulsar diagonales
 @export var sheath_time: float = 4.0
+@export var max_health: int = 5
+@export var current_health: int = 5
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
@@ -27,6 +32,8 @@ var facing_direction: int = 1 # 1 = right, -1 = left
 var carried_item: Node2D = null
 var pulled_box: PushableBox = null
 var current_room: Vector2i = Vector2i.ZERO
+var respawn_position: Vector2 = Vector2.ZERO
+var is_invulnerable: bool = false
 
 const ROOM_WIDTH: float = 160.0
 const ROOM_HEIGHT: float = 144.0
@@ -35,6 +42,9 @@ func _ready() -> void:
 	# Modo flotante top-down sin fricción de suelo/pendientes
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	wall_min_slide_angle = 0.0
+
+	respawn_position = global_position
+	current_health = max_health
 
 	var peer_id = name.to_int()
 	if peer_id != 0:
@@ -54,6 +64,13 @@ func _ready() -> void:
 
 		animated_sprite.animation_finished.connect(_on_animation_finished)
 		hitbox_area.monitoring = false
+		hitbox_area.body_entered.connect(_on_hitbox_body_entered)
+		hitbox_area.area_entered.connect(_on_hitbox_area_entered)
+
+		var hud = HUD_SCENE.instantiate()
+		add_child(hud)
+
+		Events.player_health_changed.emit(current_health, max_health)
 
 	_update_room_coords()
 
@@ -324,3 +341,70 @@ func _apply_remote_state() -> void:
 		animated_sprite.offset = Vector2.ZERO
 
 	_play_anim(sync_anim)
+
+func _on_hitbox_body_entered(body: Node2D) -> void:
+	if body == self:
+		return
+	if body.has_method("take_damage"):
+		body.take_damage(1)
+
+func _on_hitbox_area_entered(area: Area2D) -> void:
+	var parent = area.get_parent()
+	if parent and parent != self and parent.has_method("take_damage"):
+		parent.take_damage(1)
+
+func take_damage(amount: int = 1) -> void:
+	if is_invulnerable or current_health <= 0:
+		return
+
+	current_health = max(0, current_health - amount)
+	Events.player_health_changed.emit(current_health, max_health)
+
+	if current_health <= 0:
+		die()
+	else:
+		is_invulnerable = true
+		# Destello de invencibilidad (i-frames 0.8s)
+		var tween = create_tween()
+		for i in range(4):
+			tween.tween_property(animated_sprite, "modulate:a", 0.3, 0.1)
+			tween.tween_property(animated_sprite, "modulate:a", 1.0, 0.1)
+		tween.tween_callback(func():
+			is_invulnerable = false
+			if animated_sprite:
+				animated_sprite.modulate.a = 1.0
+		)
+
+func die() -> void:
+	var effect = DEAD_EFFECT.instantiate()
+	effect.global_position = global_position
+	get_tree().current_scene.add_child.call_deferred(effect)
+
+	Events.player_died.emit(self)
+
+	# Soltar caja o item
+	if pulled_box != null:
+		_release_box()
+	if carried_item != null:
+		drop_item()
+
+	# Reaparecer en el último checkpoint / spawn
+	current_health = max_health
+	global_position = respawn_position
+	_update_room_coords()
+	Events.player_health_changed.emit(current_health, max_health)
+
+	# Periodo de gracia tras respawn
+	is_invulnerable = true
+	var tween = create_tween()
+	for i in range(3):
+		tween.tween_property(animated_sprite, "modulate:a", 0.3, 0.1)
+		tween.tween_property(animated_sprite, "modulate:a", 1.0, 0.1)
+	tween.tween_callback(func():
+		is_invulnerable = false
+		if animated_sprite:
+			animated_sprite.modulate.a = 1.0
+	)
+
+func set_checkpoint(pos: Vector2) -> void:
+	respawn_position = pos

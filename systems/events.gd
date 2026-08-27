@@ -24,4 +24,9 @@ signal box_released(box: CharacterBody2D)
 signal door_opened(door_id: String)
 @warning_ignore("unused_signal")
 signal door_closed(door_id: String)
+@warning_ignore("unused_signal")
+signal player_health_changed(current_hp: int, max_hp: int)
+@warning_ignore("unused_signal")
+signal player_died(player: CharacterBody2D)
+
 

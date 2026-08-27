@@ -1,0 +1,45 @@
+[gd_scene format=3 uid="uid://dead_generic_effect_01"]
+
+[ext_resource type="Script" path="res://objects/effects/dead_effect.gd" id="1_dead_script"]
+[ext_resource type="Texture2D" uid="uid://des7tmgiu650f" path="res://objects/effects/assets/Dead_Generic-Sheet.png" id="2_dead_tex"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_d0"]
+atlas = ExtResource("2_dead_tex")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_d1"]
+atlas = ExtResource("2_dead_tex")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_d2"]
+atlas = ExtResource("2_dead_tex")
+region = Rect2(32, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_d3"]
+atlas = ExtResource("2_dead_tex")
+region = Rect2(48, 0, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_dead"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_d0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_d1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_d2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_d3")
+}],
+"loop": false,
+"name": &"default",
+"speed": 10.0
+}]
+
+[node name="DeadEffect" type="AnimatedSprite2D"]
+sprite_frames = SubResource("SpriteFrames_dead")
+autoplay = "default"
+script = ExtResource("1_dead_script")
