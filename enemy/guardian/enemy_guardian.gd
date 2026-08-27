@@ -155,10 +155,16 @@ func _physics_process(delta: float) -> void:
 				if dist > 0.1:
 					var dir = to_player.normalized()
 					_update_facing_from_dir(dir)
-					if dist <= attack_distance and attack_timer.is_stopped():
-						_start_attack()
-						return
-					velocity = dir * move_speed
+					if dist <= attack_distance:
+						if attack_timer.is_stopped():
+							_start_attack()
+							return
+						else:
+							# Ya en rango pero cooldown activo: frenar completamente
+							# para no empujar al jugador inadvertidamente
+							velocity = Vector2.ZERO
+					else:
+						velocity = dir * move_speed
 				else:
 					velocity = Vector2.ZERO
 
@@ -408,16 +414,16 @@ func _update_room_coords() -> void:
 # ---------------------------------------------------------------------------
 
 ## Empuja las cajas con las que choca el guardián al perseguir al jugador.
-## Usa los resultados de move_and_slide() para detectar la colisión real.
+## Usa la normal de colisión real (igual que el jugador) para dirección fluida.
 func _push_boxes_on_collision() -> void:
 	for i in get_slide_collision_count():
 		var col = get_slide_collision(i)
 		var collider = col.get_collider()
 		if collider is PushableBox and is_instance_valid(collider):
-			# Empujar la caja en la dirección del movimiento del guardián
-			var push_dir = velocity.normalized()
-			if push_dir != Vector2.ZERO:
-				collider.push(push_dir * move_speed * 0.65)
+			# Usar la normal de colisión real (negada = dirección de empuje)
+			var push_dir = -col.get_normal()
+			if velocity.dot(push_dir) > 0.2:
+				collider.push(push_dir * (move_speed * 0.55))
 
 func take_damage(amount: int = 1) -> void:
 	if is_invulnerable or current_health <= 0:
