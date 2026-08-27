@@ -369,7 +369,8 @@ func _on_animation_finished() -> void:
 		state_timer = 1.0
 		sheath_timer.start(sheath_time)
 	elif animated_sprite.animation == "blink":
-		_play_anim("idle_sword" if has_sword_drawn else "idle")
+		# Al terminar el pestañeo siempre volver a idle y encadenar el próximo timer
+		_play_anim("idle")
 		_start_random_blink()
 
 func _on_sheath_timeout() -> void:
@@ -378,12 +379,16 @@ func _on_sheath_timeout() -> void:
 		_play_anim("idle")
 
 func _start_random_blink() -> void:
-	if is_instance_valid(blink_timer):
+	# Solo pestañear si está desarmado y no atacando (igual que el jugador)
+	if is_instance_valid(blink_timer) and not has_sword_drawn and current_state != State.ATTACK:
 		blink_timer.start(randf_range(2.5, 5.5))
 
 func _on_blink_timeout() -> void:
-	if is_inside_tree() and (current_state == State.PATROL_IDLE or current_state == State.PATROL_WALK):
+	if not has_sword_drawn and current_state != State.ATTACK and is_inside_tree():
 		_play_anim("blink")
+	else:
+		# Condición no cumplida: reiniciar el timer para intentarlo luego
+		_start_random_blink()
 
 func _on_hitbox_body_entered(body: Node2D) -> void:
 	if body is Player and is_instance_valid(body):
