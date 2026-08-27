@@ -3,9 +3,11 @@ extends CanvasLayer
 
 @export var max_hearts: int = 5
 @export var current_hearts: int = 5
+@export var heart_separation: int = 1 ## Separación en píxeles entre corazones (estilo Zelda retro)
 
 const HEART_TEXTURE = preload("res://ui/assets/Hud.png")
 
+@onready var margin_container: MarginContainer = $MarginContainer
 @onready var hearts_container: HBoxContainer = $MarginContainer/HeartsContainer
 
 func _ready() -> void:
@@ -21,16 +23,22 @@ func _rebuild_hearts() -> void:
 	if not hearts_container:
 		return
 
-	# Limpiar anteriores
+	hearts_container.add_theme_constant_override("separation", heart_separation)
+
 	for child in hearts_container.get_children():
 		child.queue_free()
 
 	for i in range(max_hearts):
 		var heart = TextureRect.new()
-		heart.texture = HEART_TEXTURE
-		heart.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		heart.custom_minimum_size = Vector2(10, 10)
-		heart.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		var atlas = AtlasTexture.new()
+		atlas.atlas = HEART_TEXTURE
+		atlas.region = Rect2(4, 4, 7, 7) # Bounding box exacto de 7x7 px
+		heart.texture = atlas
+		heart.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		heart.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+		heart.stretch_mode = TextureRect.STRETCH_KEEP
+		heart.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		heart.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		hearts_container.add_child(heart)
 
 	_update_hearts_display()
@@ -50,4 +58,4 @@ func _update_hearts_display() -> void:
 			heart.modulate = Color(1.0, 1.0, 1.0, 1.0)
 		else:
 			# Corazón vacío / dañado
-			heart.modulate = Color(0.15, 0.15, 0.15, 0.4)
+			heart.modulate = Color(0.15, 0.15, 0.15, 0.35)
