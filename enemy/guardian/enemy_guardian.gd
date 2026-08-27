@@ -1,23 +1,23 @@
 class_name EnemyGuardian
 extends CharacterBody2D
 
-## Enemy Guardian - IA de Patrullaje Inteligente v2
+## Enemy Guardian - IA de Patrullaje Inteligente v3
 ##
 ## Estados:
 ##   PATROL_IDLE  → Se detiene, mira, pestañea (1.5-3s).
 ##   PATROL_WALK  → Camina en dirección libre unos pasos.
 ##   ALERT        → Perdió el rastro del jugador, busca activamente (2.5s).
+##   INVESTIGATE  → Sospecha por caja movida: rodea para ver qué hay.
+##   DODGE        → Esquiva proyectil lateralmente.
 ##   CHASE        → Ve al jugador de frente: desenfunda y persigue.
 ##   ATTACK       → Lanza espadazo.
-##   DODGE        → Esquiva proyectil lateralmente.
 ##
-## Mejoras v2:
-##   - Balas dañan al guardián (collision_mask correcto en bullet.tscn).
-##   - _check_hazards() usa get_nodes_in_group("projectiles") en vez de get_children().
-##   - Raycasts excluyen el propio cuerpo del guardián.
-##   - Evaluación de dirección segura al elegir patrullaje (descarta ejes con balas activas).
-##   - Estado ALERT para no perder el rastro de forma abrupta.
-##   - is_attacking eliminado: se usa solo current_state == State.ATTACK.
+## v3:
+##   - Anti-atascado en pared: tras 0.55s pegado a muro, rodea lateralmente.
+##   - Sospecha por caja movida: si una caja se mueve >1.8px/frame → INVESTIGATE.
+##   - INVESTIGATE: rodea la caja en órbita hasta ver al jugador o rendirse (4s).
+##   - Parar en rango de ataque con cooldown activo (no empujar al jugador).
+##   - Empuje de caja usando normal de colisión física (igual que el jugador).
 
 const DEAD_EFFECT = preload("res://objects/effects/dead_effect.tscn")
 
@@ -25,12 +25,13 @@ enum State {
 	PATROL_IDLE,
 	PATROL_WALK,
 	ALERT,
+	INVESTIGATE,
 	DODGE,
 	CHASE,
 	ATTACK
 }
 
-# --- Propiedades exportables ---
+# --- Combat ---
 @export_group("Combat")
 @export var max_health: int = 2
 @export var move_speed: float = 48.0
@@ -40,10 +41,13 @@ enum State {
 @export var sheath_time: float = 4.0
 @export var damage: int = 1
 
+# --- Vision ---
 @export_group("Vision")
 @export var sight_radius: float = 75.0
-@export var alert_duration: float = 2.5    ## Tiempo que busca al jugador antes de rendirse
-@export var wall_scan_dist: float = 18.0   ## Distancia de escaneo frontal de muros
+@export var alert_duration: float = 2.5
+@export var wall_scan_dist: float = 18.0
+@export var box_move_threshold: float = 1.8   ## px/frame para sospechar caja
+@export var investigate_duration: float = 4.0## s rodeando la caja sospechosa
 
 # --- Nodos ---
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
@@ -62,19 +66,34 @@ var target_player: Player = null
 var current_room: Vector2i = Vector2i.ZERO
 var is_invulnerable: bool = false
 
+# Patrulla
 var patrol_dir: Vector2 = Vector2.ZERO
 var state_timer: float = 2.0
 var alert_timer: float = 0.0
+
+# Dodge
 var dodge_dir: Vector2 = Vector2.ZERO
 var dodge_timer: float = 0.0
+
+# Anti-atascado (CHASE)
+var stuck_timer: float = 0.0
+var unstuck_dir: Vector2 = Vector2.ZERO
+var unstuck_timer: float = 0.0
+
+# Investigación por caja sospechosa
+var box_positions: Dictionary = {}         # PushableBox → Vector2 pos del frame anterior
+var investigate_target: Vector2 = Vector2.ZERO
+var investigate_orbit_dir: Vector2 = Vector2.ZERO
+var investigate_timer: float = 0.0
 
 const ROOM_WIDTH: float = 160.0
 const ROOM_HEIGHT: float = 144.0
 
-# Bitmask layer 1 (muros) + layer 6 (cajas) para raycasts: 1+32=33
+# Layer 1 (muros) + Layer 6 (cajas) → 1 + 32 = 33
 # La caja bloquea la línea de visión igual que un muro.
 const WALL_LAYER_MASK: int = 33
 
+# ---------------------------------------------------------------------------
 func _ready() -> void:
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	wall_min_slide_angle = 0.0
@@ -98,15 +117,19 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_update_room_coords()
 
-	# 1. Evasión de proyectiles (prioridad máxima, interrumpe patrulla/alerta)
+	# 1. Evasión de proyectiles (prioridad máxima)
 	if current_state != State.ATTACK:
 		_check_hazards()
 
-	# 2. Visión del jugador (no actúa si ya está atacando o esquivando)
+	# 2. Visión del jugador
 	if current_state != State.ATTACK and current_state != State.DODGE:
 		_check_player_vision(delta)
 
-	# 3. Máquina de estados
+	# 3. Vigilar cajas sospechosas (solo cuando NO está en combate)
+	if current_state == State.PATROL_IDLE or current_state == State.PATROL_WALK or current_state == State.ALERT:
+		_check_suspicious_boxes()
+
+	# 4. Máquina de estados
 	match current_state:
 		State.PATROL_IDLE:
 			velocity = Vector2.ZERO
@@ -125,23 +148,41 @@ func _physics_process(delta: float) -> void:
 				_update_facing_from_velocity(velocity)
 
 		State.ALERT:
-			# Gira lentamente buscando al jugador, sin moverse
 			velocity = Vector2.ZERO
 			alert_timer -= delta
 			if alert_timer <= 0.0:
-				# Perdió el rastro completamente
 				target_player = null
 				has_sword_drawn = false
 				current_state = State.PATROL_IDLE
 				state_timer = randf_range(1.5, 3.0)
 				sheath_timer.start(sheath_time)
 
+		State.INVESTIGATE:
+			investigate_timer -= delta
+			if investigate_timer <= 0.0:
+				# Tiempo agotado sin encontrar nada → volver a patrulla
+				current_state = State.PATROL_IDLE
+				state_timer = randf_range(1.0, 2.0)
+				investigate_target = Vector2.ZERO
+			else:
+				var to_target = investigate_target - global_position
+				var dist_to_target = to_target.length()
+				var orbit_speed = move_speed * patrol_speed_mult
+				if dist_to_target > 30.0:
+					# Acercarse al punto sospechoso
+					velocity = to_target.normalized() * orbit_speed
+				else:
+					# Orbitar perpendicularmente para rodear la caja
+					if _is_path_blocked(investigate_orbit_dir):
+						investigate_orbit_dir = -investigate_orbit_dir
+					velocity = investigate_orbit_dir * orbit_speed
+					_update_facing_from_velocity(velocity)
+
 		State.DODGE:
 			dodge_timer -= delta
 			velocity = dodge_dir * (move_speed * 1.3)
 			if dodge_timer <= 0.0 or _is_path_blocked(dodge_dir):
 				velocity = Vector2.ZERO
-				# Volver a estado anterior sensato
 				current_state = State.PATROL_IDLE if target_player == null else State.CHASE
 				state_timer = 1.0
 
@@ -149,33 +190,50 @@ func _physics_process(delta: float) -> void:
 			if target_player == null or not is_instance_valid(target_player):
 				current_state = State.ALERT
 				alert_timer = alert_duration
+				stuck_timer = 0.0
+				unstuck_timer = 0.0
 			else:
 				var to_player = target_player.global_position - global_position
 				var dist = to_player.length()
 				if dist > 0.1:
 					var dir = to_player.normalized()
 					_update_facing_from_dir(dir)
+
 					if dist <= attack_distance:
 						if attack_timer.is_stopped():
 							_start_attack()
 							return
 						else:
-							# Ya en rango pero cooldown activo: frenar completamente
-							# para no empujar al jugador inadvertidamente
+							# En rango pero cooldown activo: quieto, no empujar
 							velocity = Vector2.ZERO
+							stuck_timer = 0.0
 					else:
 						velocity = dir * move_speed
+
+						# Anti-atascado: si tiene colisiones y no avanza, rodear
+						if get_slide_collision_count() > 0 and velocity.length() < 8.0:
+							stuck_timer += delta
+						else:
+							stuck_timer = 0.0
+							unstuck_timer = 0.0
+
+						if stuck_timer > 0.55:
+							stuck_timer = 0.0
+							var perp = Vector2(-dir.y, dir.x)
+							unstuck_dir = perp if not _is_path_blocked(perp) else -perp
+							unstuck_timer = 0.6
+
+						if unstuck_timer > 0.0:
+							unstuck_timer -= delta
+							velocity = unstuck_dir * move_speed
 				else:
 					velocity = Vector2.ZERO
+					stuck_timer = 0.0
 
 		State.ATTACK:
 			velocity = Vector2.ZERO
 
 	move_and_slide()
-
-	# En modo persecución, empujar cajas al chocar físicamente con ellas
-	if current_state == State.CHASE:
-		_push_boxes_on_collision()
 
 	_update_animation(velocity.length() > 1.0)
 
@@ -201,12 +259,41 @@ func _check_player_vision(delta: float) -> void:
 			has_sword_drawn = true
 			sheath_timer.stop()
 	elif current_state == State.CHASE:
-		# Perdió la línea de visión → entra en ALERTA
 		alert_timer -= delta
 		if alert_timer <= 0.0:
 			target_player = null
 			current_state = State.ALERT
 			alert_timer = alert_duration
+
+# ---------------------------------------------------------------------------
+# SOSPECHA POR CAJA MOVIDA
+# ---------------------------------------------------------------------------
+func _check_suspicious_boxes() -> void:
+	for box in get_tree().get_nodes_in_group("boxes"):
+		if not box is PushableBox or not is_instance_valid(box):
+			continue
+		# Solo vigilar cajas en la misma habitación
+		var box_room = Vector2i(
+			int(floor(box.global_position.x / ROOM_WIDTH)),
+			int(floor(box.global_position.y / ROOM_HEIGHT))
+		)
+		if box_room != current_room:
+			box_positions.erase(box)
+			continue
+
+		var last_pos: Vector2 = box_positions.get(box, box.global_position)
+		var moved_dist = box.global_position.distance_to(last_pos)
+		box_positions[box] = box.global_position
+
+		# La caja se movió más del umbral → sospechar e investigar
+		if moved_dist > box_move_threshold:
+			var to_box = (box.global_position - global_position).normalized()
+			var orbit = Vector2(-to_box.y, to_box.x)
+			investigate_target = box.global_position
+			investigate_orbit_dir = orbit if not _is_path_blocked(orbit) else -orbit
+			investigate_timer = investigate_duration
+			current_state = State.INVESTIGATE
+			return  # Un trigger por frame es suficiente
 
 # ---------------------------------------------------------------------------
 # EVASIÓN DE PROYECTILES
@@ -215,26 +302,20 @@ func _check_hazards() -> void:
 	if current_state == State.DODGE:
 		return
 
-	# Escaneo de proyectiles activos usando el grupo, independientemente de su nodo padre
-	var projectiles = get_tree().get_nodes_in_group("projectiles")
-	for node in projectiles:
+	for node in get_tree().get_nodes_in_group("projectiles"):
 		if not is_instance_valid(node):
 			continue
 		var to_bot = global_position - node.global_position
 		var dist = to_bot.length()
 		if dist < 32.0:
-			# Obtener dirección del proyectil (compatibilidad con ambos tipos)
 			var bullet_dir: Vector2 = Vector2.ZERO
 			if "direction" in node:
 				bullet_dir = node.direction.normalized()
 			if bullet_dir == Vector2.ZERO:
 				continue
-			# El proyectil viene hacia nosotros si la dirección apunta hacia el bot
 			if bullet_dir.dot(to_bot.normalized()) > 0.15:
-				# Calcular eje perpendicular libre de obstáculos
 				var perp_a = Vector2(-bullet_dir.y, bullet_dir.x)
 				var perp_b = -perp_a
-				# Elegir la perpendicular que NO tenga otro proyectil en esa dirección
 				var safe_perp = _pick_safe_dodge(perp_a, perp_b)
 				if safe_perp != Vector2.ZERO:
 					dodge_dir = safe_perp
@@ -243,12 +324,10 @@ func _check_hazards() -> void:
 					break
 
 func _pick_safe_dodge(a: Vector2, b: Vector2) -> Vector2:
-	# Preferir la dirección que no esté bloqueada por muro y no tenga balas cerca
 	var score_a = 0
 	var score_b = 0
 	if _is_path_blocked(a): score_a -= 10
 	if _is_path_blocked(b): score_b -= 10
-	# Penalizar si hay otro proyectil en esa dirección
 	for node in get_tree().get_nodes_in_group("projectiles"):
 		if not is_instance_valid(node):
 			continue
@@ -256,7 +335,7 @@ func _pick_safe_dodge(a: Vector2, b: Vector2) -> Vector2:
 		if to_proj.dot(a) > 0.5: score_a -= 3
 		if to_proj.dot(b) > 0.5: score_b -= 3
 	if score_a == score_b and score_a < 0:
-		return Vector2.ZERO # Atrapado, no hay esquive seguro
+		return Vector2.ZERO
 	if score_a >= score_b:
 		return a if not _is_path_blocked(a) else Vector2.ZERO
 	return b if not _is_path_blocked(b) else Vector2.ZERO
@@ -280,7 +359,9 @@ func _is_path_blocked(dir: Vector2) -> bool:
 	var space = get_world_2d().direct_space_state
 	if not space:
 		return false
-	var query = PhysicsRayQueryParameters2D.create(global_position, global_position + dir * wall_scan_dist, WALL_LAYER_MASK)
+	var query = PhysicsRayQueryParameters2D.create(
+		global_position, global_position + dir * wall_scan_dist, WALL_LAYER_MASK
+	)
 	query.exclude = [self]
 	query.collide_with_bodies = true
 	query.collide_with_areas = false
@@ -290,7 +371,6 @@ func _is_path_blocked(dir: Vector2) -> bool:
 # PATRULLAJE
 # ---------------------------------------------------------------------------
 func _pick_patrol_direction() -> void:
-	# Puntuar cada dirección: penalizar muros, penalizar proyectiles en esa dirección
 	var dirs = [Vector2.RIGHT, Vector2.LEFT, Vector2.UP, Vector2.DOWN]
 	var scores: Dictionary = {}
 
@@ -298,21 +378,19 @@ func _pick_patrol_direction() -> void:
 		var s = 0
 		if _is_path_blocked(d):
 			s -= 100
-		# Penalizar si hay proyectiles volando en esa dirección
 		for node in get_tree().get_nodes_in_group("projectiles"):
 			if not is_instance_valid(node):
 				continue
-			var to_proj = (node.global_position - global_position)
+			var to_proj = node.global_position - global_position
 			if to_proj.length() < 60.0:
 				var bullet_dir: Vector2 = node.direction.normalized() if "direction" in node else Vector2.ZERO
 				if bullet_dir.dot(d) > 0.5:
 					s -= 20
 		scores[d] = s
 
-	# Ordenar por puntaje descendente, elegir mejor opción
 	var best_dir = Vector2.ZERO
 	var best_score = -999
-	dirs.shuffle() # Aleatoriedad para variedad
+	dirs.shuffle()
 	for d in dirs:
 		if scores[d] > best_score:
 			best_score = scores[d]
@@ -323,7 +401,6 @@ func _pick_patrol_direction() -> void:
 		current_state = State.PATROL_WALK
 		state_timer = randf_range(1.2, 3.0)
 	else:
-		# Todas las direcciones tienen amenaza/muro: quedarse quieto
 		current_state = State.PATROL_IDLE
 		state_timer = randf_range(1.0, 2.0)
 
@@ -381,17 +458,15 @@ func _on_animation_finished() -> void:
 		state_timer = 1.0
 		sheath_timer.start(sheath_time)
 	elif animated_sprite.animation == "blink":
-		# Al terminar el pestañeo siempre volver a idle y encadenar el próximo timer
 		_play_anim("idle")
 		_start_random_blink()
 
 func _on_sheath_timeout() -> void:
-	if current_state != State.CHASE and current_state != State.ATTACK and current_state != State.ALERT:
+	if current_state != State.CHASE and current_state != State.ATTACK and current_state != State.ALERT and current_state != State.INVESTIGATE:
 		has_sword_drawn = false
 		_play_anim("idle")
 
 func _start_random_blink() -> void:
-	# Solo pestañear si está desarmado y no atacando (igual que el jugador)
 	if is_instance_valid(blink_timer) and not has_sword_drawn and current_state != State.ATTACK:
 		blink_timer.start(randf_range(2.5, 5.5))
 
@@ -399,7 +474,6 @@ func _on_blink_timeout() -> void:
 	if not has_sword_drawn and current_state != State.ATTACK and is_inside_tree():
 		_play_anim("blink")
 	else:
-		# Condición no cumplida: reiniciar el timer para intentarlo luego
 		_start_random_blink()
 
 func _on_hitbox_body_entered(body: Node2D) -> void:
@@ -412,19 +486,6 @@ func _update_room_coords() -> void:
 # ---------------------------------------------------------------------------
 # DAÑO Y MUERTE
 # ---------------------------------------------------------------------------
-
-## Empuja las cajas con las que choca el guardián al perseguir al jugador.
-## Usa la normal de colisión real (igual que el jugador) para dirección fluida.
-func _push_boxes_on_collision() -> void:
-	for i in get_slide_collision_count():
-		var col = get_slide_collision(i)
-		var collider = col.get_collider()
-		if collider is PushableBox and is_instance_valid(collider):
-			# Usar la normal de colisión real (negada = dirección de empuje)
-			var push_dir = -col.get_normal()
-			if velocity.dot(push_dir) > 0.2:
-				collider.push(push_dir * (move_speed * 0.55))
-
 func take_damage(amount: int = 1) -> void:
 	if is_invulnerable or current_health <= 0:
 		return
@@ -432,9 +493,10 @@ func take_damage(amount: int = 1) -> void:
 	current_health -= amount
 	is_invulnerable = true
 
-	# Desenfunda y entra en combate inmediatamente
 	has_sword_drawn = true
 	current_state = State.CHASE
+	stuck_timer = 0.0
+	unstuck_timer = 0.0
 	sheath_timer.start(sheath_time)
 
 	var tween = create_tween()
