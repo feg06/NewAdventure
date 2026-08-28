@@ -1,6 +1,8 @@
-[gd_scene format=3 uid="uid://checkpoint_area_01"]
+[gd_scene format=3 uid="uid://checkpoint_flagpole_01"]
 
 [ext_resource type="Script" path="res://objects/checkpoint/checkpoint.gd" id="1_checkpoint_script"]
+[ext_resource type="Texture2D" uid="uid://dklojsu3u1ym2" path="res://objects/assets/Stacke.png" id="2_pole"]
+[ext_resource type="Texture2D" uid="uid://c86yfpl2ykgad" path="res://objects/assets/Flag.png" id="3_flag"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_chk"]
 size = Vector2(16, 16)
@@ -12,3 +14,11 @@ script = ExtResource("1_checkpoint_script")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_chk")
+
+[node name="PoleSprite" type="Sprite2D" parent="."]
+texture = ExtResource("2_pole")
+
+[node name="FlagSprite" type="Sprite2D" parent="."]
+modulate = Color(0.95, 0.25, 0.25, 1)
+texture = ExtResource("3_flag")
+offset = Vector2(0, 0)

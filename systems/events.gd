@@ -28,5 +28,7 @@ signal door_closed(door_id: String)
 signal player_health_changed(current_hp: int, max_hp: int)
 @warning_ignore("unused_signal")
 signal player_died(player: CharacterBody2D)
+@warning_ignore("unused_signal")
+signal checkpoint_activated(checkpoint: Node2D, respawn_pos: Vector2)
 
 

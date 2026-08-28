@@ -12,6 +12,7 @@
 [ext_resource type="PackedScene" path="res://enemy/guardian/enemy_guardian.tscn" id="10_dmdjm"]
 [ext_resource type="PackedScene" path="res://enemy/guardian_fury/enemy_guardian_fury.tscn" id="11_b6cmo"]
 [ext_resource type="PackedScene" path="res://enemy/thief/enemy_thief.tscn" id="12_dforq"]
+[ext_resource type="PackedScene" path="res://objects/checkpoint/checkpoint.tscn" id="13_chk"]
 
 [node name="World" type="Node2D" unique_id=1072961651]
 script = ExtResource("1_32v53")
@@ -39,6 +40,12 @@ button_id = "btn_courtyard"
 [node name="PushableBox" parent="InteractiveObjects" unique_id=1194367668 instance=ExtResource("5_box")]
 position = Vector2(206, 178)
 collision_mask = 35
+
+[node name="Checkpoint01" parent="InteractiveObjects" unique_id=581938210 instance=ExtResource("13_chk")]
+position = Vector2(272, 196)
+
+[node name="Checkpoint02" parent="InteractiveObjects" unique_id=892374123 instance=ExtResource("13_chk")]
+position = Vector2(240, 112)
 
 [node name="Items" type="Node2D" parent="." unique_id=1448177382]
 
