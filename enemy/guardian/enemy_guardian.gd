@@ -282,12 +282,10 @@ func _check_player_vision(delta: float) -> void:
 	var visible_player: Player = null
 	for p in get_tree().get_nodes_in_group("players"):
 		if p is Player and is_instance_valid(p):
-			var pr = Vector2i(int(floor(p.global_position.x / ROOM_WIDTH)), int(floor(p.global_position.y / ROOM_HEIGHT)))
-			if pr == current_room:
-				var dist = global_position.distance_to(p.global_position)
-				if dist <= sight_radius and _has_line_of_sight(p.global_position):
-					visible_player = p
-					break
+			var dist = global_position.distance_to(p.global_position)
+			if dist <= sight_radius and _has_line_of_sight(p.global_position):
+				visible_player = p
+				break
 
 	# CHASE solo cuando LOS activa
 	if visible_player != null:
