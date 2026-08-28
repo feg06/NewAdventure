@@ -1,0 +1,152 @@
+[gd_scene format=3 uid="uid://enemy_thief_01"]
+
+[ext_resource type="Script" path="res://enemy/thief/enemy_thief.gd" id="1_thief_script"]
+[ext_resource type="Texture2D" uid="uid://yd3iwfdy5pej" path="res://enemy/thief/assets/Idle.png" id="2_idle"]
+[ext_resource type="Texture2D" uid="uid://cbor357lxldcf" path="res://enemy/thief/assets/Idle_Sword.png" id="3_idle_sword"]
+[ext_resource type="Texture2D" uid="uid://cxw1r4wj4j7hl" path="res://enemy/thief/assets/Blink-Sheet.png" id="4_blink"]
+[ext_resource type="Texture2D" uid="uid://cf3ury5wsdjhl" path="res://enemy/thief/assets/Walk_Sword-Sheet.png" id="5_walk_sword"]
+[ext_resource type="Texture2D" uid="uid://d2gr80vsl3rg8" path="res://enemy/thief/assets/Attack_Sword-Sheet.png" id="6_attack"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_atk_0"]
+atlas = ExtResource("6_attack")
+region = Rect2(0, 0, 32, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_atk_1"]
+atlas = ExtResource("6_attack")
+region = Rect2(32, 0, 32, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_atk_2"]
+atlas = ExtResource("6_attack")
+region = Rect2(64, 0, 32, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_blink_0"]
+atlas = ExtResource("4_blink")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_blink_1"]
+atlas = ExtResource("4_blink")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk_0"]
+atlas = ExtResource("5_walk_sword")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk_1"]
+atlas = ExtResource("5_walk_sword")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk_2"]
+atlas = ExtResource("5_walk_sword")
+region = Rect2(32, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk_3"]
+atlas = ExtResource("5_walk_sword")
+region = Rect2(48, 0, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_thief"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_atk_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_atk_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_atk_2")
+}],
+"loop": false,
+"name": &"attack",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_blink_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_blink_1")
+}],
+"loop": false,
+"name": &"blink",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_idle")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("3_idle_sword")
+}],
+"loop": true,
+"name": &"idle_sword",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_walk_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_walk_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_walk_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_walk_3")
+}],
+"loop": true,
+"name": &"walk_sword",
+"speed": 8.0
+}]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_thief_body"]
+radius = 5.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_thief_hitbox"]
+size = Vector2(16, 16)
+
+[node name="EnemyThief" type="CharacterBody2D" groups=["enemies"]]
+collision_layer = 4
+collision_mask = 35
+script = ExtResource("1_thief_script")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("SpriteFrames_thief")
+animation = &"idle"
+autoplay = "idle"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_thief_body")
+
+[node name="HitboxArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="HitboxShape" type="CollisionShape2D" parent="HitboxArea"]
+position = Vector2(12, 0)
+shape = SubResource("RectangleShape2D_thief_hitbox")
+
+[node name="AttackTimer" type="Timer" parent="."]
+
+[node name="SheathTimer" type="Timer" parent="."]
+
+[node name="BlinkTimer" type="Timer" parent="."]
+
+[node name="QuestionMark" type="Label" parent="."]
+visible = false
+offset_left = -6.0
+offset_top = -18.0
+offset_right = 6.0
+offset_bottom = -4.0
+theme_override_colors/font_color = Color(1, 0.9, 0.2, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 10
+text = "?"
+horizontal_alignment = 1
+vertical_alignment = 1
