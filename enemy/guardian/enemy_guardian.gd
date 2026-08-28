@@ -81,14 +81,12 @@ var unstuck_dir: Vector2 = Vector2.ZERO
 var unstuck_timer: float = 0.0
 var _prev_pos: Vector2 = Vector2.ZERO  ## Posición del frame anterior para medir desplazamiento real
 
-# Control de re-enganche tras perder al jugador
+# Control de re-enganche tras re-aparecer
 var re_engage_cooldown: float = 0.0
-var los_lost_frames: int = 0
-const LOS_LOSE_GRACE: int = 8
 
-# Última posición conocida del jugador (para perseguir sin LOS actual)
+# Última posición conocida del jugador
 var last_known_player_pos: Vector2 = Vector2.ZERO
-var has_current_los: bool = false  ## True si el jugador es visible este frame
+var has_current_los: bool = false
 
 # Investigación por caja sospechosa
 var box_positions: Dictionary = {}         # PushableBox → Vector2 pos del frame anterior
@@ -276,37 +274,34 @@ func _physics_process(delta: float) -> void:
 	_update_animation(velocity.length() > 1.0)
 
 # ---------------------------------------------------------------------------
-# VISIÓN DEL JUGADOR
+# VISIÓN DEL JUGADOR  (mínima, sin contadores extra)
 # ---------------------------------------------------------------------------
 func _check_player_vision(delta: float) -> void:
 	var visible_player: Player = null
 	for p in get_tree().get_nodes_in_group("players"):
 		if p is Player and is_instance_valid(p):
-			var dist = global_position.distance_to(p.global_position)
-			if dist <= sight_radius and _has_line_of_sight(p.global_position):
+			if global_position.distance_to(p.global_position) <= sight_radius and _has_line_of_sight(p.global_position):
 				visible_player = p
 				break
 
-	# CHASE solo cuando LOS activa
 	if visible_player != null:
-		los_lost_frames = 0
+		# Jugador visible: actualizar objetivo y úLTIMA posición conocida
 		has_current_los = true
 		target_player = visible_player
 		last_known_player_pos = visible_player.global_position
-		alert_timer = alert_duration
 		if current_state != State.CHASE and current_state != State.ATTACK:
 			if re_engage_cooldown <= 0.0:
 				current_state = State.CHASE
 				has_sword_drawn = true
 				sheath_timer.stop()
 			else:
-				re_engage_cooldown -= delta
+				re_engage_cooldown = maxf(0.0, re_engage_cooldown - delta)
 		else:
 			re_engage_cooldown = 0.0
 	else:
+		# Jugador no visible: apagar LOS, el estado CHASE reaccionará inmediatamente
 		has_current_los = false
-		if re_engage_cooldown > 0.0:
-			re_engage_cooldown -= delta
+		re_engage_cooldown = maxf(0.0, re_engage_cooldown - delta)
 
 # ---------------------------------------------------------------------------
 # SOSPECHA POR CAJA MOVIDA
