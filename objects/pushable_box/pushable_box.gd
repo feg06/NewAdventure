@@ -57,8 +57,25 @@ func _physics_process(delta: float) -> void:
 func push(force: Vector2) -> void:
 	if grabber != null:
 		return
+	# Rechazar el empuje si hay un enemigo bloqueando en esa dirección
+	var push_dir = force.normalized()
+	if push_dir != Vector2.ZERO and _is_enemy_in_direction(push_dir):
+		return
 	is_being_pushed = true
 	push_velocity = force
+
+func _is_enemy_in_direction(dir: Vector2) -> bool:
+	var space = get_world_2d().direct_space_state
+	if not space:
+		return false
+	## Layer 3 (enemigos) = bitmask 4
+	var query = PhysicsRayQueryParameters2D.create(
+		global_position, global_position + dir * 26.0, 4
+	)
+	query.exclude = [self]
+	query.collide_with_bodies = true
+	query.collide_with_areas = false
+	return not space.intersect_ray(query).is_empty()
 
 func grab_by(player: CharacterBody2D) -> void:
 	grabber = player

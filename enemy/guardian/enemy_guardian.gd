@@ -82,9 +82,13 @@ var unstuck_timer: float = 0.0
 var _prev_pos: Vector2 = Vector2.ZERO  ## Posición del frame anterior para medir desplazamiento real
 
 # Control de re-enganche tras perder al jugador
-var re_engage_cooldown: float = 0.0  ## Bloquea volver a CHASE tras entrar en ALERT
-var los_lost_frames: int = 0          ## Frames consecutivos sin ver al jugador (anti-parpadeo)
-const LOS_LOSE_GRACE: int = 8        ## Frames de gracia antes de empezar a contar alert_timer
+var re_engage_cooldown: float = 0.0
+var los_lost_frames: int = 0
+const LOS_LOSE_GRACE: int = 8
+
+# Última posición conocida del jugador (para perseguir sin LOS actual)
+var last_known_player_pos: Vector2 = Vector2.ZERO
+var has_current_los: bool = false  ## True si el jugador es visible este frame
 
 # Investigación por caja sospechosa
 var box_positions: Dictionary = {}         # PushableBox → Vector2 pos del frame anterior
@@ -155,14 +159,27 @@ func _physics_process(delta: float) -> void:
 				_update_facing_from_velocity(velocity)
 
 		State.ALERT:
-			velocity = Vector2.ZERO
 			alert_timer -= delta
 			if alert_timer <= 0.0:
 				target_player = null
 				has_sword_drawn = false
+				has_current_los = false
+				last_known_player_pos = Vector2.ZERO
 				current_state = State.PATROL_IDLE
 				state_timer = randf_range(1.5, 3.0)
 				sheath_timer.start(sheath_time)
+			else:
+				# ALERT activo: caminar hacia el úLTIMO punto donde se vio al jugador
+				if last_known_player_pos != Vector2.ZERO:
+					var to_last = last_known_player_pos - global_position
+					var dist_last = to_last.length()
+					if dist_last > 10.0:
+						velocity = to_last.normalized() * (move_speed * patrol_speed_mult)
+						_update_facing_from_velocity(velocity)
+					else:
+						velocity = Vector2.ZERO  # Llegó al punto: mirar alrededor
+				else:
+					velocity = Vector2.ZERO
 
 		State.INVESTIGATE:
 			investigate_timer -= delta
@@ -194,9 +211,12 @@ func _physics_process(delta: float) -> void:
 				state_timer = 1.0
 
 		State.CHASE:
-			if target_player == null or not is_instance_valid(target_player):
+			# CHASE solo funciona con LOS activa.
+			# Si perdemos LOS → ALERT inmediato (sin frames de gracia, sin zig-zag).
+			if not has_current_los or target_player == null or not is_instance_valid(target_player):
 				current_state = State.ALERT
 				alert_timer = alert_duration
+				re_engage_cooldown = 0.5
 				stuck_timer = 0.0
 				unstuck_timer = 0.0
 			else:
@@ -205,18 +225,15 @@ func _physics_process(delta: float) -> void:
 				if dist > 0.1:
 					var dir = to_player.normalized()
 					_update_facing_from_dir(dir)
-
 					if dist <= attack_distance:
 						if attack_timer.is_stopped():
 							_start_attack()
 							return
 						else:
-							# En rango pero cooldown activo: quieto, no empujar
 							velocity = Vector2.ZERO
 							stuck_timer = 0.0
 					else:
 						velocity = dir * move_speed
-						# Si está activo el desatasco, lo aplica (se sobrescribe abajo del match)
 						if unstuck_timer > 0.0:
 							velocity = unstuck_dir * move_speed
 				else:
@@ -272,10 +289,12 @@ func _check_player_vision(delta: float) -> void:
 					visible_player = p
 					break
 
+	# CHASE solo cuando LOS activa
 	if visible_player != null:
-		# Jugador visible: resetear contador de frames perdidos
 		los_lost_frames = 0
+		has_current_los = true
 		target_player = visible_player
+		last_known_player_pos = visible_player.global_position
 		alert_timer = alert_duration
 		if current_state != State.CHASE and current_state != State.ATTACK:
 			if re_engage_cooldown <= 0.0:
@@ -286,20 +305,8 @@ func _check_player_vision(delta: float) -> void:
 				re_engage_cooldown -= delta
 		else:
 			re_engage_cooldown = 0.0
-	elif current_state == State.CHASE:
-		# LOS perdida: acumular frames antes de empezar a perder al jugador
-		# Esto elimina el parpadeo por raycast en el borde de la caja
-		los_lost_frames += 1
-		if los_lost_frames >= LOS_LOSE_GRACE:
-			alert_timer -= delta
-			if alert_timer <= 0.0:
-				target_player = null
-				current_state = State.ALERT
-				alert_timer = alert_duration
-				los_lost_frames = 0
-				re_engage_cooldown = 0.6
 	else:
-		los_lost_frames = 0
+		has_current_los = false
 		if re_engage_cooldown > 0.0:
 			re_engage_cooldown -= delta
 
@@ -492,9 +499,17 @@ func _on_animation_finished() -> void:
 		hitbox_area.monitoring = false
 		animated_sprite.offset = Vector2.ZERO
 		_play_anim("idle_sword")
-		current_state = State.CHASE if target_player != null else State.PATROL_IDLE
-		state_timer = 1.0
 		sheath_timer.start(sheath_time)
+		state_timer = 1.0
+		# Volver a CHASE solo si hay jugador visible; si se escondió durante el ataque → ALERT
+		if target_player != null and has_current_los:
+			current_state = State.CHASE
+		elif target_player != null:
+			current_state = State.ALERT
+			alert_timer = alert_duration
+			re_engage_cooldown = 0.5
+		else:
+			current_state = State.PATROL_IDLE
 	elif animated_sprite.animation == "blink":
 		_play_anim("idle")
 		_start_random_blink()
