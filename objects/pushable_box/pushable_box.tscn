@@ -4,9 +4,10 @@
 [ext_resource type="Texture2D" uid="uid://8qymhorp8est" path="res://objects/assets/PushableBox.png" id="2_box_tex"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_box"]
-size = Vector2(16, 16)
+size = Vector2(12, 12)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_grab"]
+size = Vector2(16, 16)
 
 [sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_box"]
 properties/0/path = NodePath(".:sync_pos")
