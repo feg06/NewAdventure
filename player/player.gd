@@ -409,3 +409,9 @@ func die() -> void:
 
 func set_checkpoint(pos: Vector2) -> void:
 	respawn_position = pos
+
+func play_teleport_transition(target_pos: Vector2, _exit_dir_name: String = "Ninguno") -> void:
+	global_position = target_pos
+	_update_room_coords()
+	_update_carried_item_position()
+	Events.room_changed.emit(multiplayer.get_unique_id(), current_room)

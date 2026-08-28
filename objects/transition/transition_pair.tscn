@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://transition_pair_01"]
+
+[ext_resource type="Script" path="res://objects/transition/transition_pair.gd" id="1_pair_script"]
+
+[node name="TransitionPair" type="Node2D"]
+script = ExtResource("1_pair_script")
