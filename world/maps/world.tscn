@@ -12,7 +12,7 @@
 [ext_resource type="PackedScene" path="res://enemy/guardian/enemy_guardian.tscn" id="10_dmdjm"]
 [ext_resource type="PackedScene" path="res://enemy/guardian_fury/enemy_guardian_fury.tscn" id="11_b6cmo"]
 [ext_resource type="PackedScene" path="res://enemy/thief/enemy_thief.tscn" id="12_dforq"]
-[ext_resource type="PackedScene" path="res://objects/checkpoint/checkpoint.tscn" id="13_chk"]
+[ext_resource type="PackedScene" uid="uid://ddamvoajre70n" path="res://objects/checkpoint/checkpoint.tscn" id="13_chk"]
 
 [node name="World" type="Node2D" unique_id=1072961651]
 script = ExtResource("1_32v53")

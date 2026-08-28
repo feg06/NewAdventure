@@ -1,24 +1,33 @@
-[gd_scene format=3 uid="uid://checkpoint_flagpole_01"]
+[gd_scene format=3 uid="uid://ddamvoajre70n"]
 
-[ext_resource type="Script" path="res://objects/checkpoint/checkpoint.gd" id="1_checkpoint_script"]
+[ext_resource type="Script" uid="uid://1ruop5468wmq" path="res://objects/checkpoint/checkpoint.gd" id="1_checkpoint_script"]
 [ext_resource type="Texture2D" uid="uid://dklojsu3u1ym2" path="res://objects/assets/Stacke.png" id="2_pole"]
 [ext_resource type="Texture2D" uid="uid://c86yfpl2ykgad" path="res://objects/assets/Flag.png" id="3_flag"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_chk"]
-size = Vector2(16, 16)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_chk_area"]
+size = Vector2(6, 16)
 
-[node name="Checkpoint" type="Area2D" groups=["checkpoints"]]
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_chk_pole"]
+size = Vector2(4, 14)
+
+[node name="Checkpoint" type="Area2D" unique_id=2111025988 groups=["checkpoints"]]
 collision_layer = 0
 collision_mask = 2
 script = ExtResource("1_checkpoint_script")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("RectangleShape2D_chk")
+[node name="AreaCollisionShape" type="CollisionShape2D" parent="." unique_id=2064332988]
+shape = SubResource("RectangleShape2D_chk_area")
 
-[node name="PoleSprite" type="Sprite2D" parent="."]
+[node name="ObstacleBody" type="StaticBody2D" parent="." unique_id=627792073]
+collision_mask = 0
+
+[node name="PoleCollisionShape" type="CollisionShape2D" parent="ObstacleBody" unique_id=1978227117]
+position = Vector2(0, 1)
+shape = SubResource("RectangleShape2D_chk_pole")
+
+[node name="PoleSprite" type="Sprite2D" parent="." unique_id=653157486]
 texture = ExtResource("2_pole")
 
-[node name="FlagSprite" type="Sprite2D" parent="."]
+[node name="FlagSprite" type="Sprite2D" parent="." unique_id=435147200]
 modulate = Color(0.95, 0.25, 0.25, 1)
 texture = ExtResource("3_flag")
-offset = Vector2(0, 0)

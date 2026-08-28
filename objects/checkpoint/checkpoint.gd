@@ -3,6 +3,11 @@ extends Area2D
 
 ## Checkpoint Area / Flagpole Respawn Point
 ##
+## Colisiones:
+##   - ObstacleBody (StaticBody2D en Layer 1): Sólido para Enemigos, Cajas y Proyectiles.
+##   - El Jugador tiene excepción de colisión (add_collision_exception_with), permitiéndole
+##     atravesar y tocar el Area2D libremente sin trabarse.
+##
 ## Mecánica de Bandera Clásica:
 ##   1. Inicial (Rojo): La bandera roja está arriba en el mástil.
 ##   2. Al tocarlo (Rojo -> Blanco):
@@ -35,6 +40,7 @@ const FLAG_POS_BOTTOM: float = 8.0
 
 @onready var pole_sprite: Sprite2D = $PoleSprite
 @onready var flag_sprite: Sprite2D = $FlagSprite
+@onready var obstacle_body: StaticBody2D = $ObstacleBody
 
 var is_animating: bool = false
 var current_tween: Tween = null
@@ -42,10 +48,24 @@ var current_tween: Tween = null
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	Events.checkpoint_activated.connect(_on_other_checkpoint_activated)
+	Events.player_spawned.connect(_on_player_spawned)
+
+	# Excluir a los jugadores de colisionar físicamente con el mástil
+	for p in get_tree().get_nodes_in_group("players"):
+		_ignore_player_collision(p)
+
 	_update_visuals()
+
+func _on_player_spawned(_peer_id: int, player: CharacterBody2D) -> void:
+	_ignore_player_collision(player)
+
+func _ignore_player_collision(player: CharacterBody2D) -> void:
+	if obstacle_body and player and is_instance_valid(player):
+		obstacle_body.add_collision_exception_with(player)
 
 func _on_body_entered(body: Node2D) -> void:
 	if body is Player and is_instance_valid(body):
+		_ignore_player_collision(body)
 		if state != State.ACTIVE and not is_animating:
 			activate_checkpoint(body)
 

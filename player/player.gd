@@ -72,6 +72,7 @@ func _ready() -> void:
 
 		Events.player_health_changed.emit(current_health, max_health)
 
+	Events.player_spawned.emit(peer_id, self)
 	_update_room_coords()
 
 func _physics_process(_delta: float) -> void:
