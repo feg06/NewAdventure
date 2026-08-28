@@ -476,24 +476,28 @@ func _get_open_room_exits(space: PhysicsDirectSpaceState2D, room: Vector2i) -> A
 	var right = (room.x + 1) * ROOM_WIDTH
 	var top = room.y * ROOM_HEIGHT
 	var bottom = (room.y + 1) * ROOM_HEIGHT
+	var center = Vector2(left + ROOM_WIDTH / 2.0, top + ROOM_HEIGHT / 2.0)
 
-	# North Exit
-	if _is_segment_clear(space, Vector2(left + 80.0, top + 12.0), Vector2(left + 80.0, top - 12.0)):
-		exits.append(Vector2(left + 80.0, top - 18.0))
-	# South Exit
-	if _is_segment_clear(space, Vector2(left + 80.0, bottom - 12.0), Vector2(left + 80.0, bottom + 12.0)):
-		exits.append(Vector2(left + 80.0, bottom + 18.0))
-	# West Exit
-	if _is_segment_clear(space, Vector2(left + 12.0, top + 72.0), Vector2(left - 12.0, top + 72.0)):
-		exits.append(Vector2(left - 18.0, top + 72.0))
-	# East Exit
-	if _is_segment_clear(space, Vector2(right - 12.0, top + 72.0), Vector2(right + 12.0, top + 72.0)):
-		exits.append(Vector2(right + 18.0, top + 72.0))
+	# North (comprueba desde el interior y=36 hasta el exterior y=-20 atravesando la zona de puerta)
+	if _is_passage_clear(space, Vector2(center.x, top + 36.0), Vector2(center.x, top - 20.0)):
+		exits.append(Vector2(center.x, top - 20.0))
+
+	# South (comprueba desde el interior hasta el exterior atravesando el pasaje inferior)
+	if _is_passage_clear(space, Vector2(center.x, bottom - 36.0), Vector2(center.x, bottom + 20.0)):
+		exits.append(Vector2(center.x, bottom + 20.0))
+
+	# West (comprueba pasaje lateral izquierdo)
+	if _is_passage_clear(space, Vector2(left + 36.0, center.y), Vector2(left - 20.0, center.y)):
+		exits.append(Vector2(left - 20.0, center.y))
+
+	# East (comprueba pasaje lateral derecho)
+	if _is_passage_clear(space, Vector2(right - 36.0, center.y), Vector2(right + 20.0, center.y)):
+		exits.append(Vector2(right + 20.0, center.y))
 
 	return exits
 
-func _is_segment_clear(space: PhysicsDirectSpaceState2D, p1: Vector2, p2: Vector2) -> bool:
-	var q = PhysicsRayQueryParameters2D.create(p1, p2, WALL_LAYER_MASK)
+func _is_passage_clear(space: PhysicsDirectSpaceState2D, from_pt: Vector2, to_pt: Vector2) -> bool:
+	var q = PhysicsRayQueryParameters2D.create(from_pt, to_pt, WALL_LAYER_MASK)
 	q.collide_with_areas = false
 	q.collide_with_bodies = true
 	return space.intersect_ray(q).is_empty()
