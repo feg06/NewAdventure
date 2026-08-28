@@ -6,7 +6,8 @@ extends CharacterBody2D
 ## Comportamiento:
 ##   1. Neutral / Patrulla: Camina pacíficamente sin atacar si el jugador no lleva nada valioso.
 ##   2. Robo (STALK_STEAL): Si ve al jugador con un objeto valioso (llave/ítem), se acerca rápido y se lo roba.
-##   3. Huida (FLEE): Con el objeto robado, huye rápidamente alejándose del jugador entre salas.
+##   3. Huida Inteligente entre Salas (FLEE): Con el objeto robado, localiza las salidas abiertas de la
+##      habitación y huye hacia salas adyacentes alejadas del jugador, bordeando esquinas sin trabarse.
 ##   4. Recuperación / Enfado (?): Si el jugador lo golpea o recupera el objeto, el ladrón suelta el ítem,
 ##      muestra un signo de interrogación "?" y entra en modo combate (CHASE/ATTACK) con espada como un Guardián.
 ##   5. Calma / Pérdida de rastro: Si pierde al jugador (ALERT), tras unos segundos se calma,
@@ -29,9 +30,9 @@ enum State {
 # --- Combat & Stats ---
 @export_group("Combat & Stats")
 @export var max_health: int = 2
-@export var move_speed: float = 46.0
-@export var stalk_speed_mult: float = 1.25    ## Velocidad al acercarse a robar (57.5 px/s)
-@export var flee_speed_mult: float = 1.55     ## Velocidad al huir con el botín (71.3 px/s)
+@export var move_speed: float = 48.0
+@export var stalk_speed_mult: float = 1.30    ## Velocidad al acercarse a robar (62.4 px/s)
+@export var flee_speed_mult: float = 1.55     ## Velocidad al huir con el botín (74.4 px/s)
 @export var patrol_speed_mult: float = 0.55
 @export var steal_distance: float = 14.0      ## Distancia mínima para arrebatar el ítem
 @export var attack_distance: float = 18.0
@@ -43,7 +44,7 @@ enum State {
 @export_group("Vision")
 @export var sight_radius: float = 85.0
 @export var alert_duration: float = 2.8
-@export var wall_scan_dist: float = 18.0
+@export var wall_scan_dist: float = 20.0
 @export var box_move_threshold: float = 1.8
 @export var investigate_duration: float = 4.0
 
@@ -71,11 +72,15 @@ var patrol_dir: Vector2 = Vector2.ZERO
 var state_timer: float = 2.0
 var alert_timer: float = 0.0
 
+# Huida y Navegación entre Salas
+var escape_target: Vector2 = Vector2.ZERO
+var flee_replan_timer: float = 0.0
+
 # Dodge
 var dodge_dir: Vector2 = Vector2.ZERO
 var dodge_timer: float = 0.0
 
-# Anti-atascado
+# Anti-atascado universal (CHASE, FLEE, STALK)
 var stuck_timer: float = 0.0
 var unstuck_dir: Vector2 = Vector2.ZERO
 var unstuck_timer: float = 0.0
@@ -158,34 +163,48 @@ func _physics_process(delta: float) -> void:
 		State.STALK_STEAL:
 			# Acercarse al jugador para robarle el ítem
 			if target_player == null or not is_instance_valid(target_player) or target_player.carried_item == null:
-				# El jugador ya no tiene el ítem o se fue → volver a patrulla
 				current_state = State.PATROL_IDLE
 				state_timer = 1.0
 			else:
 				var to_player = target_player.global_position - global_position
 				var dist = to_player.length()
 				if dist <= steal_distance:
-					# ¡ROBO EJECUTADO!
 					_steal_item_from_player(target_player)
 				else:
-					var dir = to_player.normalized()
-					_update_facing_from_dir(dir)
-					velocity = dir * (move_speed * stalk_speed_mult)
+					var desired_dir = to_player.normalized()
+					var steer_dir = _steer_with_obstacle_avoidance(desired_dir)
+					if unstuck_timer > 0.0:
+						steer_dir = unstuck_dir
+					_update_facing_from_dir(steer_dir)
+					velocity = steer_dir * (move_speed * stalk_speed_mult)
 
 		State.FLEE:
-			# Huir del jugador con el objeto robado
+			# Huida inteligente con el objeto robado hacia otras salas
 			if carried_item == null:
-				# Ya no tenemos el ítem → entrar en combate/alerta
 				current_state = State.ALERT
 				alert_timer = alert_duration
+				escape_target = Vector2.ZERO
 			else:
-				var flee_from = target_player.global_position if (target_player != null and is_instance_valid(target_player)) else last_known_player_pos
-				var away_dir = (global_position - flee_from).normalized()
-				if away_dir == Vector2.ZERO:
-					away_dir = Vector2.RIGHT if facing_direction > 0 else Vector2.LEFT
-				
-				var best_flee_dir = _pick_flee_direction(away_dir)
-				velocity = best_flee_dir * (move_speed * flee_speed_mult)
+				flee_replan_timer -= delta
+				if flee_replan_timer <= 0.0 or escape_target == Vector2.ZERO:
+					escape_target = _find_best_escape_target()
+					flee_replan_timer = 0.35
+
+				var to_target = escape_target - global_position
+				if to_target.length() < 16.0:
+					# Ya alcanzamos el punto de escape o umbral de sala → buscar siguiente sala
+					escape_target = _find_best_escape_target()
+					to_target = escape_target - global_position
+
+				var desired_dir = to_target.normalized()
+				if desired_dir == Vector2.ZERO:
+					desired_dir = Vector2.RIGHT if facing_direction > 0 else Vector2.LEFT
+
+				var steer_dir = _steer_with_obstacle_avoidance(desired_dir)
+				if unstuck_timer > 0.0:
+					steer_dir = unstuck_dir
+
+				velocity = steer_dir * (move_speed * flee_speed_mult)
 				_update_facing_from_velocity(velocity)
 
 		State.ALERT:
@@ -199,12 +218,12 @@ func _physics_process(delta: float) -> void:
 				state_timer = randf_range(1.5, 3.0)
 				sheath_timer.start(sheath_time)
 			else:
-				# ALERT activo: caminar hacia el último punto visto
 				if last_known_player_pos != Vector2.ZERO:
 					var to_last = last_known_player_pos - global_position
 					var dist_last = to_last.length()
 					if dist_last > 10.0:
-						velocity = to_last.normalized() * (move_speed * patrol_speed_mult)
+						var dir = _steer_with_obstacle_avoidance(to_last.normalized())
+						velocity = dir * (move_speed * patrol_speed_mult)
 						_update_facing_from_velocity(velocity)
 					else:
 						velocity = Vector2.ZERO
@@ -238,7 +257,6 @@ func _physics_process(delta: float) -> void:
 				state_timer = 1.0
 
 		State.CHASE:
-			# Persecución en modo combate hostil
 			if not has_current_los or target_player == null or not is_instance_valid(target_player):
 				current_state = State.ALERT
 				alert_timer = alert_duration
@@ -259,9 +277,10 @@ func _physics_process(delta: float) -> void:
 							velocity = Vector2.ZERO
 							stuck_timer = 0.0
 					else:
-						velocity = dir * move_speed
+						var steer_dir = _steer_with_obstacle_avoidance(dir)
 						if unstuck_timer > 0.0:
-							velocity = unstuck_dir * move_speed
+							steer_dir = unstuck_dir
+						velocity = steer_dir * move_speed
 				else:
 					velocity = Vector2.ZERO
 					stuck_timer = 0.0
@@ -271,29 +290,31 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
-	# Anti-atascado en persecución
-	if current_state == State.CHASE and target_player != null:
+	# Anti-atascado Universal (FLEE, CHASE, STALK)
+	var is_active_moving = (current_state == State.FLEE or current_state == State.CHASE or current_state == State.STALK_STEAL)
+	if is_active_moving:
 		var actual_moved = global_position.distance_to(_prev_pos)
 		var wanted_to_move = velocity.length() > 2.0
-		if wanted_to_move and actual_moved < 0.8:
+		if wanted_to_move and actual_moved < 0.6:
 			stuck_timer += get_physics_process_delta_time()
 		else:
-			if actual_moved > 1.0:
+			if actual_moved > 0.8:
 				stuck_timer = 0.0
 				unstuck_timer = 0.0
-		if stuck_timer > 0.5:
+
+		if stuck_timer > 0.25:
 			stuck_timer = 0.0
-			var dir_to_player = (target_player.global_position - global_position).normalized() if is_instance_valid(target_player) else Vector2.ZERO
-			var perp = Vector2(-dir_to_player.y, dir_to_player.x)
+			var base_dir = velocity.normalized() if velocity.length() > 0.1 else Vector2.RIGHT
+			var perp = Vector2(-base_dir.y, base_dir.x)
 			unstuck_dir = perp if not _is_path_blocked(perp) else -perp
-			unstuck_timer = 0.65
-	_prev_pos = global_position
+			unstuck_timer = 0.4
+			if current_state == State.FLEE:
+				escape_target = _find_best_escape_target()
 
-	if unstuck_timer > 0.0 and current_state == State.CHASE:
+	if unstuck_timer > 0.0 and is_active_moving:
 		unstuck_timer -= get_physics_process_delta_time()
-		velocity = unstuck_dir * move_speed
-		move_and_slide()
 
+	_prev_pos = global_position
 	_update_carried_item_position()
 	_update_animation(velocity.length() > 1.0)
 
@@ -313,7 +334,6 @@ func _check_player_vision(delta: float) -> void:
 		target_player = visible_player
 		last_known_player_pos = visible_player.global_position
 
-		# Caso 1: Ladrón en modo combate (CHASE/ATTACK)
 		if has_sword_drawn or current_state == State.CHASE:
 			if current_state != State.CHASE and current_state != State.ATTACK:
 				if re_engage_cooldown <= 0.0:
@@ -324,11 +344,9 @@ func _check_player_vision(delta: float) -> void:
 			else:
 				re_engage_cooldown = 0.0
 
-		# Caso 2: Ladrón ya tiene el botín → mantener FLEE
 		elif carried_item != null:
 			current_state = State.FLEE
 
-		# Caso 3: Ladrón neutral ve a jugador con ítem valioso → STALK_STEAL
 		elif visible_player.carried_item != null:
 			current_state = State.STALK_STEAL
 	else:
@@ -349,7 +367,9 @@ func _steal_item_from_player(player: Player) -> void:
 		item.pick_up_by(self)
 	Events.item_grabbed.emit(item, self)
 
-	# Iniciar huida inmediata
+	# Iniciar huida inmediata hacia otra sala
+	escape_target = _find_best_escape_target()
+	flee_replan_timer = 0.4
 	current_state = State.FLEE
 
 func drop_item() -> void:
@@ -402,34 +422,126 @@ func show_question_mark() -> void:
 	)
 
 # ---------------------------------------------------------------------------
-# HUIDA INTELIGENTE (FLEE)
+# HUIDA ENTRE SALAS Y NAVEGACIÓN
 # ---------------------------------------------------------------------------
-func _pick_flee_direction(base_away_dir: Vector2) -> Vector2:
-	# Si la dirección opuesta está libre, usarla directamente
-	if not _is_path_blocked(base_away_dir):
-		return base_away_dir
+func _find_best_escape_target() -> Vector2:
+	var space = get_world_2d().direct_space_state
+	if not space:
+		return global_position + (Vector2.RIGHT * 30.0)
 
-	# Si hay muro enfrente, buscar las mejores direcciones de escape (perpendiculares y diagonales)
-	var test_dirs = [
-		Vector2(-base_away_dir.y, base_away_dir.x),
-		Vector2(base_away_dir.y, -base_away_dir.x),
-		(base_away_dir + Vector2(-base_away_dir.y, base_away_dir.x)).normalized(),
-		(base_away_dir + Vector2(base_away_dir.y, -base_away_dir.x)).normalized(),
-		Vector2.RIGHT, Vector2.LEFT, Vector2.UP, Vector2.DOWN
-	]
+	var player_pos = last_known_player_pos
+	if target_player != null and is_instance_valid(target_player):
+		player_pos = target_player.global_position
+	elif player_pos == Vector2.ZERO:
+		player_pos = global_position - (Vector2.RIGHT * 40.0)
 
-	var best_dir = base_away_dir
+	var player_room = Vector2i(int(floor(player_pos.x / ROOM_WIDTH)), int(floor(player_pos.y / ROOM_HEIGHT)))
+
+	# 1. Obtener todas las salidas abiertas de la habitación actual
+	var open_exits = _get_open_room_exits(space, current_room)
+
+	# Si estamos en la misma habitación que el jugador: HUIR A OTRA SALA
+	if current_room == player_room and not open_exits.is_empty():
+		var best_exit = open_exits[0]
+		var best_score = -99999.0
+
+		for exit_pt in open_exits:
+			var dist_to_player = exit_pt.distance_to(player_pos)
+			var dist_to_self = exit_pt.distance_to(global_position)
+			# Puntuación: premiar estar lejos del jugador y accesible para el ladrón
+			var score = dist_to_player * 1.5 - dist_to_self * 0.5
+			if score > best_score:
+				best_score = score
+				best_exit = exit_pt
+
+		return best_exit
+
+	# Si ya estamos en una sala DIFERENTE a la del jugador:
+	# Moverse hacia el centro/fondo de esta nueva sala para alejarse de la puerta
+	var room_center = Vector2(current_room.x * ROOM_WIDTH + 80.0, current_room.y * ROOM_HEIGHT + 72.0)
+	var away_from_player_offset = (room_center - player_pos).normalized() * 35.0
+	var safe_interior_point = room_center + away_from_player_offset
+
+	if not open_exits.is_empty():
+		# Si el jugador está entrando en esta sala, escoger una salida que lleve a una 3ra sala
+		for exit_pt in open_exits:
+			if exit_pt.distance_to(player_pos) > 100.0:
+				return exit_pt
+
+	return safe_interior_point
+
+func _get_open_room_exits(space: PhysicsDirectSpaceState2D, room: Vector2i) -> Array[Vector2]:
+	var exits: Array[Vector2] = []
+	var left = room.x * ROOM_WIDTH
+	var right = (room.x + 1) * ROOM_WIDTH
+	var top = room.y * ROOM_HEIGHT
+	var bottom = (room.y + 1) * ROOM_HEIGHT
+
+	# North Exit
+	if _is_segment_clear(space, Vector2(left + 80.0, top + 12.0), Vector2(left + 80.0, top - 12.0)):
+		exits.append(Vector2(left + 80.0, top - 18.0))
+	# South Exit
+	if _is_segment_clear(space, Vector2(left + 80.0, bottom - 12.0), Vector2(left + 80.0, bottom + 12.0)):
+		exits.append(Vector2(left + 80.0, bottom + 18.0))
+	# West Exit
+	if _is_segment_clear(space, Vector2(left + 12.0, top + 72.0), Vector2(left - 12.0, top + 72.0)):
+		exits.append(Vector2(left - 18.0, top + 72.0))
+	# East Exit
+	if _is_segment_clear(space, Vector2(right - 12.0, top + 72.0), Vector2(right + 12.0, top + 72.0)):
+		exits.append(Vector2(right + 18.0, top + 72.0))
+
+	return exits
+
+func _is_segment_clear(space: PhysicsDirectSpaceState2D, p1: Vector2, p2: Vector2) -> bool:
+	var q = PhysicsRayQueryParameters2D.create(p1, p2, WALL_LAYER_MASK)
+	q.collide_with_areas = false
+	q.collide_with_bodies = true
+	return space.intersect_ray(q).is_empty()
+
+# ---------------------------------------------------------------------------
+# EVITACIÓN DE OBSTÁCULOS / DESLIZAMIENTO EN ESQUINAS (FEELERS)
+# ---------------------------------------------------------------------------
+func _steer_with_obstacle_avoidance(desired_dir: Vector2) -> Vector2:
+	if desired_dir == Vector2.ZERO:
+		return Vector2.ZERO
+
+	var space = get_world_2d().direct_space_state
+	if not space:
+		return desired_dir
+
+	# 1. Probar dirección directa
+	var center_query = PhysicsRayQueryParameters2D.create(
+		global_position, global_position + desired_dir * wall_scan_dist, WALL_LAYER_MASK
+	)
+	center_query.exclude = [self]
+	center_query.collide_with_bodies = true
+	center_query.collide_with_areas = false
+	var hit = space.intersect_ray(center_query)
+
+	if hit.is_empty():
+		return desired_dir
+
+	# 2. Si hay colisión enfrente: deslizar sobre la pared
+	var normal: Vector2 = hit.normal
+	var slide_dir = (desired_dir - normal * desired_dir.dot(normal)).normalized()
+
+	if slide_dir != Vector2.ZERO and not _is_path_blocked(slide_dir):
+		return slide_dir
+
+	# 3. Probar abanico de ángulos (feelers)
+	var angles = [PI * 0.25, -PI * 0.25, PI * 0.5, -PI * 0.5, PI * 0.75, -PI * 0.75]
+	var best_feeler = desired_dir
 	var best_score = -999.0
 
-	for d in test_dirs:
-		if _is_path_blocked(d):
-			continue
-		var score = d.dot(base_away_dir) * 10.0
-		if score > best_score:
-			best_score = score
-			best_dir = d
+	for ang in angles:
+		var test_dir = desired_dir.rotated(ang)
+		if not _is_path_blocked(test_dir):
+			var score = test_dir.dot(desired_dir)
+			if score > best_score:
+				best_score = score
+				best_feeler = test_dir
 
-	return best_dir
+	return best_feeler
 
 # ---------------------------------------------------------------------------
 # EVASIÓN DE PROYECTILES
@@ -673,6 +785,7 @@ func take_damage(amount: int = 1) -> void:
 	current_state = State.CHASE
 	stuck_timer = 0.0
 	unstuck_timer = 0.0
+	escape_target = Vector2.ZERO
 	sheath_timer.start(sheath_time)
 
 	var tween = create_tween()
