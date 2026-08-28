@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" uid="uid://bgpj0ik0pilti" path="res://objects/dispenser/dispenser_02.tscn" id="8_w4wqy"]
 [ext_resource type="PackedScene" uid="uid://ulbavjgpic1f" path="res://objects/door/door.tscn" id="9_ltvwc"]
 [ext_resource type="PackedScene" path="res://enemy/guardian/enemy_guardian.tscn" id="10_dmdjm"]
+[ext_resource type="PackedScene" path="res://enemy/guardian_fury/enemy_guardian_fury.tscn" id="11_b6cmo"]
 
 [node name="World" type="Node2D" unique_id=1072961651]
 script = ExtResource("1_32v53")
@@ -36,6 +37,7 @@ button_id = "btn_courtyard"
 
 [node name="PushableBox" parent="InteractiveObjects" unique_id=1194367668 instance=ExtResource("5_box")]
 position = Vector2(212, 67)
+collision_mask = 35
 
 [node name="Items" type="Node2D" parent="." unique_id=1448177382]
 
@@ -80,9 +82,15 @@ position = Vector2(240, 16)
 
 [node name="EnemyGuardian" parent="." unique_id=987277385 instance=ExtResource("10_dmdjm")]
 position = Vector2(123, 252)
+collision_mask = 3
 
 [node name="PushableBox" parent="." unique_id=1308728986 instance=ExtResource("5_box")]
 position = Vector2(118, 103)
+collision_mask = 35
 
 [node name="PushableBox2" parent="." unique_id=908417413 instance=ExtResource("5_box")]
 position = Vector2(43, 41)
+collision_mask = 35
+
+[node name="EnemyGuardianFury" parent="." unique_id=26756502 instance=ExtResource("11_b6cmo")]
+position = Vector2(48, 250)
