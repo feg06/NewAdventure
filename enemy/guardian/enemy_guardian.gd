@@ -79,6 +79,12 @@ var dodge_timer: float = 0.0
 var stuck_timer: float = 0.0
 var unstuck_dir: Vector2 = Vector2.ZERO
 var unstuck_timer: float = 0.0
+var _prev_pos: Vector2 = Vector2.ZERO  ## Posición del frame anterior para medir desplazamiento real
+
+# Control de re-enganche tras perder al jugador
+var re_engage_cooldown: float = 0.0  ## Bloquea volver a CHASE tras entrar en ALERT
+var los_lost_frames: int = 0          ## Frames consecutivos sin ver al jugador (anti-parpadeo)
+const LOS_LOSE_GRACE: int = 8        ## Frames de gracia antes de empezar a contar alert_timer
 
 # Investigación por caja sospechosa
 var box_positions: Dictionary = {}         # PushableBox → Vector2 pos del frame anterior
@@ -112,6 +118,7 @@ func _ready() -> void:
 	_update_room_coords()
 	state_timer = randf_range(1.5, 3.0)
 	_start_random_blink()
+	_prev_pos = global_position
 
 # ---------------------------------------------------------------------------
 func _physics_process(delta: float) -> void:
@@ -209,22 +216,8 @@ func _physics_process(delta: float) -> void:
 							stuck_timer = 0.0
 					else:
 						velocity = dir * move_speed
-
-						# Anti-atascado: si tiene colisiones y no avanza, rodear
-						if get_slide_collision_count() > 0 and velocity.length() < 8.0:
-							stuck_timer += delta
-						else:
-							stuck_timer = 0.0
-							unstuck_timer = 0.0
-
-						if stuck_timer > 0.55:
-							stuck_timer = 0.0
-							var perp = Vector2(-dir.y, dir.x)
-							unstuck_dir = perp if not _is_path_blocked(perp) else -perp
-							unstuck_timer = 0.6
-
+						# Si está activo el desatasco, lo aplica (se sobrescribe abajo del match)
 						if unstuck_timer > 0.0:
-							unstuck_timer -= delta
 							velocity = unstuck_dir * move_speed
 				else:
 					velocity = Vector2.ZERO
@@ -234,6 +227,34 @@ func _physics_process(delta: float) -> void:
 			velocity = Vector2.ZERO
 
 	move_and_slide()
+
+	# Anti-atascado: medir desplazamiento REAL (post move_and_slide)
+	# Si queríamos movernos pero apenas avanzamos, el NPC está atascado
+	if current_state == State.CHASE and target_player != null:
+		var actual_moved = global_position.distance_to(_prev_pos)
+		var wanted_to_move = velocity.length() > 2.0
+		if wanted_to_move and actual_moved < 0.8:
+			stuck_timer += get_physics_process_delta_time()
+		else:
+			if actual_moved > 1.0:
+				stuck_timer = 0.0
+				unstuck_timer = 0.0
+		if stuck_timer > 0.5:
+			stuck_timer = 0.0
+			# Dirección perpendicular libre para rodear el obstáculo
+			var dir_to_player = Vector2.ZERO
+			if is_instance_valid(target_player):
+				dir_to_player = (target_player.global_position - global_position).normalized()
+			var perp = Vector2(-dir_to_player.y, dir_to_player.x)
+			unstuck_dir = perp if not _is_path_blocked(perp) else -perp
+			unstuck_timer = 0.65
+	_prev_pos = global_position
+
+	# Aplicar dirección de desatasco si está activa
+	if unstuck_timer > 0.0 and current_state == State.CHASE:
+		unstuck_timer -= get_physics_process_delta_time()
+		velocity = unstuck_dir * move_speed
+		move_and_slide()
 
 	_update_animation(velocity.length() > 1.0)
 
@@ -252,18 +273,35 @@ func _check_player_vision(delta: float) -> void:
 					break
 
 	if visible_player != null:
+		# Jugador visible: resetear contador de frames perdidos
+		los_lost_frames = 0
 		target_player = visible_player
 		alert_timer = alert_duration
 		if current_state != State.CHASE and current_state != State.ATTACK:
-			current_state = State.CHASE
-			has_sword_drawn = true
-			sheath_timer.stop()
+			if re_engage_cooldown <= 0.0:
+				current_state = State.CHASE
+				has_sword_drawn = true
+				sheath_timer.stop()
+			else:
+				re_engage_cooldown -= delta
+		else:
+			re_engage_cooldown = 0.0
 	elif current_state == State.CHASE:
-		alert_timer -= delta
-		if alert_timer <= 0.0:
-			target_player = null
-			current_state = State.ALERT
-			alert_timer = alert_duration
+		# LOS perdida: acumular frames antes de empezar a perder al jugador
+		# Esto elimina el parpadeo por raycast en el borde de la caja
+		los_lost_frames += 1
+		if los_lost_frames >= LOS_LOSE_GRACE:
+			alert_timer -= delta
+			if alert_timer <= 0.0:
+				target_player = null
+				current_state = State.ALERT
+				alert_timer = alert_duration
+				los_lost_frames = 0
+				re_engage_cooldown = 0.6
+	else:
+		los_lost_frames = 0
+		if re_engage_cooldown > 0.0:
+			re_engage_cooldown -= delta
 
 # ---------------------------------------------------------------------------
 # SOSPECHA POR CAJA MOVIDA

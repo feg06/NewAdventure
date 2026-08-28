@@ -18,7 +18,7 @@ properties/1/replication_mode = 1
 
 [node name="PushableBox" type="CharacterBody2D" unique_id=1308728986 groups=["boxes", "pushable_boxes"]]
 collision_layer = 32
-collision_mask = 35
+collision_mask = 39
 motion_mode = 1
 wall_min_slide_angle = 0.0
 script = ExtResource("1_box")
